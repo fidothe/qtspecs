@@ -5767,6 +5767,18 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                <head><?function fn:parse-html?></head>
             </div3>
          </div2>
+         <div2 id="csv-functions">
+            <head>Functions on CSV Data</head>
+            <p>The functions listed parse CSV data.</p>
+            <?local-function-index?>
+            <p>The structured representation of a parsed CSV is described by the
+               <code>parsed-csv-structure-record</code>:</p>
+            <?parsed-csv-structure-record?>
+
+            <div3 id="func-parse-csv">
+               <head><?function fn:parse-csv?></head>
+            </div3>
+         </div2>
          <div2 id="json">
             <head>Conversion to and from JSON</head>
 
@@ -6940,6 +6952,42 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                <p>The result of the <xspecref spec="DM40" ref="dm-unparsed-entity-system-id"/>
                   <code>dm:unparsed-entity-system-id($node)</code> for an HTML DOM <code>Node</code>
                   is an empty sequence.</p>
+            </div3>
+         </div2>
+         <div2 id="csv">
+            <head>Conversion from CSV</head>
+
+
+            <p>JSON is a popular format for exchange of structured data on the web: it is specified in <bibref ref="rfc4180"/>.
+               This section describes facilities
+               allowing JSON data to be converted to and from XDM values.</p>
+
+            <p>This specification describes two ways of representing JSON data losslessly
+               using XDM constructs. The first method uses XDM maps to represent JSON objects, and XDM arrays to
+               represent JSON arrays. The second method represents all JSON constructs using XDM element and attribute nodes.</p>
+
+
+            <div3 id="csv-to-sequences-of-arrays">
+               <head>Representing CSV data using maps and arrays</head>
+
+
+               <p>This section defines a mapping from CSV data to XDM sequences and arrays. One function is available
+                  to support this mapping: <code>fn:parse-csv</code>.
+                  The <code>fn:parse-csv</code> function will accept any string of CSV data as input, and converts it
+                  to XDM data values. </p>
+
+               <note><p>There is no equivalent conversion back to a CSV string. The vagaries of the CSV format are such that a lossless conversion to and from a CSV string is, if desired, better achieved with custom text serialization. The informality of the format, and the lack of widespread adoption of the closest thing to a formal standard for CSV, RFC 4180, makes it difficult.</p></note>
+
+               <p>The representation of CSV data produced by the <code>fn:parse-csv</code> function
+                  has been chosen with ease of manipulation as a design aim. For example, a simple JSON object
+                  such as <code>{"Sun":1, "Mon":2, "Tue":3, ...}</code> produces a simple map, so if the result
+                  of parsing is held in <code>$weekdays</code>, the number for a given weekday can be extracted
+                  using an expression such as <code>$weekdays?Tue</code>. Similarly, a simple array such as
+                  <code>["Sun", "Mon", "Tue", ...]</code> produces an array that can be addressed as, for example,
+                  <code>$weekdays(3)</code>. A more deeply nested structure can be addressed in a similar way:
+                  for example if the JSON text is an array of person objects, each of which has a property named
+                  "phones" which is an array of strings containing phone numbers, then the first phone number of
+                  each person in the data can be addressed as <code>$data?phones(1)</code>.</p>
             </div3>
          </div2>
       </div1>
@@ -10292,6 +10340,10 @@ Organization for Standardization, 2012. Available from: <loc href="http://www.is
                   Internationalized Resource Identifiers (IRIs).</emph> Available at:
                   <loc href="http://www.ietf.org/rfc/rfc3987.txt">http://www.ietf.org/rfc/rfc3987.txt</loc>.
                </bibl>
+               <bibl id="rfc4180" key="RFC 4180">IETF. <emph>RFC 4180:
+                  Common Format and MIME Type for Comma-Separated Values (CSV) Files.</emph> Available at:
+                  <loc href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</loc>.
+               </bibl>
                <bibl id="rfc7159" key="RFC 7159">IETF. <emph>RFC 7159: The Javascript Object Notation (JSON) Data Interchange Format</emph> Available at:
                   <loc href="http://www.rfc-editor.org/rfc/rfc7159.txt">http://www.rfc-editor.org/rfc/rfc7159.txt</loc>.
                </bibl>
@@ -11446,6 +11498,7 @@ declare function eg:distinct-nodes-stable ($arg as node()*) as node()* {
               <item><p><code>map:filter</code></p></item>
               <item><p><code>map:replace</code></p></item>
               <item><p><code>map:substitute</code></p></item>
+              <item><p><code>fn:parse-csv</code></p></item>
               <item><p><code>array:partition</code></p></item>
               <item><p><code>array:replace</code></p></item>
               <item><p><code>array:slice</code></p></item>

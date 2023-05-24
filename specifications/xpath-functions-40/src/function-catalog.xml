@@ -50,6 +50,13 @@
       </fos:record>
    </fos:type>
    
+   <fos:type id="parsed-csv-structure-record">
+      <fos:record extensible="false">
+         <fos:field name="body" type="array(xs:string*)" required="true"/>
+         <fos:field name="headers" type="map(xs:string,xs:integer)" required="false"/>
+      </fos:record>
+   </fos:type>
+
    <fos:function name="node-name" prefix="fn">
       <fos:signatures>
          <fos:proto name="node-name" return-type="xs:QName?">
@@ -20448,6 +20455,115 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <p>The input <code><![CDATA[<map xmlns="http://www.w3.org/2005/xpath-functions"><number key="Sunday">1</number><number key="Monday">2</number></map>]]></code>
             produces the result <code>{"Sunday":1,"Monday":2}</code>.</p>
+         </fos:example>
+      </fos:examples>
+   </fos:function>
+
+   <fos:function name="parse-csv" prefix="fn">
+      <fos:signatures>
+         <fos:proto name="parse-csv" return-type-ref="parsed-csv-structure-record">
+            <fos:arg name="csv" type="xs:string?"/>
+            <fos:arg name="options" type="map(*)" usage="inspection" default="map{}"/>
+         </fos:proto>
+      </fos:signatures>
+      <fos:properties>
+         <fos:property>deterministic</fos:property>
+         <fos:property>context-independent</fos:property>
+         <fos:property>focus-independent</fos:property>
+      </fos:properties>
+      <fos:summary>
+         <p>Parses CSV data supplied as a string, returning the results in the form
+            of a map typically containing information about headers and the data itself as a sequence of arrays.</p>
+      </fos:summary>
+      <fos:rules>
+         <p>The effect of the one-argument form of this function is the same as calling the
+            two-argument form with an empty map as the value of the <code>$options</code>
+            argument.</p>
+
+         <p>The first argument is CSV data, as defined in <bibref ref="rfc4180"
+            />, in the form of a string. The function
+            parses this string to return an XDM value.</p>
+
+         <p>If <code>$csv</code> is the empty sequence, the function returns a map containing the key <code>body</code>, whose value is the empty sequence.</p>
+
+         <p>The <code>$options</code> argument can be used to control the way in which the parsing
+            takes place. The <termref
+               def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
+
+         <p>The entries that may appear in the <code>$options</code> map are as follows:</p>
+
+         <fos:options>
+            <fos:option key="field-separator">
+               <fos:meaning>The character used to separate fields within a record.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>","</fos:default>
+            </fos:option>
+            <fos:option key="record-separator">
+               <fos:meaning>The characters used to separate records within the CSV string.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>"\r\n"</fos:default>
+            </fos:option>
+            <fos:option key="quote-character">
+               <fos:meaning>The character used to quote fields within the CSV string.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>'"'</fos:default>
+            </fos:option>
+            <fos:option key="headers">
+               <fos:meaning>Determines whether the first record from the CSV should be treated as a list of column headers and returned as a name: field-number map in the <code>headers</code> entry of the returned map.</fos:meaning>
+               <fos:type>xs:boolean</fos:type>
+               <fos:default>true</fos:default>
+               <fos:values>
+                  <fos:value value="true">
+                     The first record is read and turned into a map of the form <code>{ "Field-header": Field-number }</code>. The first record will then not be returned as part of the array-of-sequences in the <code>body</code> entry of the returned map. If there are duplicate field headers, only the first will be included.
+                  </fos:value>
+                  <fos:value value="false">
+                     No <code>headers</code> map will be returned in the result map, and the first record will be included in the returned <code>body</code> array.
+                  </fos:value>
+               </fos:values>
+            </fos:option>
+            <fos:option key="return-headers">
+               <fos:meaning>Determines whether the first record of data from the CSV should be included in the returned <code>body</code> array even if the <code>headers</code> option is <code>true()</code>.</fos:meaning>
+               <fos:type>xs:boolean</fos:type>
+               <fos:default>false</fos:default>
+               <fos:values>
+                  <fos:value value="false">
+                     The first record will not be included in the returned <code>body</code> array if the <code>headers</code> option is <code>true()</code>. 
+                  </fos:value>
+                  <fos:value value="true">
+                     The first record will be included in the returned <code>body</code> array even if the <code>headers</code> option is <code>true()</code>.
+                  </fos:value>
+               </fos:values>
+            </fos:option>
+         </fos:options>
+
+         <p>All fields are returned as <code>xs:string</code> values. The quotes from quoted fields in the CSV are not included in the outuput.</p> 
+      </fos:rules>
+      <fos:errors>
+      </fos:errors>
+      <fos:notes>
+         <p>The result of the function will be an instance of <code>map(xs:string, item())</code> with the following top-level keys:</p>
+         <ulist>
+            <item>
+               <p><code>map{"headers": map(xs:string, xs:integer), "body": array(xs:string+)}</code></p>
+            </item>
+         </ulist>
+         <p>If no headers were extracted, there's no <code>headers</code> key.</p>
+         <ulist>
+            <item>
+               <p><code>map{"body": array(xs:string+)}</code></p>
+            </item>
+         </ulist>
+      </fos:notes>
+      <fos:examples>
+         <fos:example>
+            <fos:test>
+               <fos:expression>parse-json("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n")</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression>parse-json("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
          </fos:example>
       </fos:examples>
    </fos:function>
