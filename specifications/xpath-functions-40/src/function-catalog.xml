@@ -20522,7 +20522,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                </fos:values>
             </fos:option>
             <fos:option key="return-headers">
-               <fos:meaning>Determines whether the first record of data from the CSV should be included in the returned <code>body</code> array even if the <code>headers</code> option is <code>true()</code>.</fos:meaning>
+               <fos:meaning>Determines whether the first record of data from the CSV should be included in the returned <code>body</code> array if the <code>headers</code> option is <code>true()</code>.</fos:meaning>
                <fos:type>xs:boolean</fos:type>
                <fos:default>false</fos:default>
                <fos:values>
@@ -20535,24 +20535,14 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                </fos:values>
             </fos:option>
          </fos:options>
-
-         <p>All fields are returned as <code>xs:string</code> values. The quotes from quoted fields in the CSV are not included in the outuput.</p> 
       </fos:rules>
       <fos:errors>
+         <p>TODO</p>
       </fos:errors>
       <fos:notes>
-         <p>The result of the function will be an instance of <code>map(xs:string, item())</code> with the following top-level keys:</p>
-         <ulist>
-            <item>
-               <p><code>map{"headers": map(xs:string, xs:integer), "body": array(xs:string+)}</code></p>
-            </item>
-         </ulist>
-         <p>If no headers were extracted, there's no <code>headers</code> key.</p>
-         <ulist>
-            <item>
-               <p><code>map{"body": array(xs:string+)}</code></p>
-            </item>
-         </ulist>
+         <p>All fields are returned as <code>xs:string</code> values.</p>
+         <p>Quoted fields in the input are returned without the quotes..</p>
+         <p>For more discussion of the returned data, see <specref ref="csv"/>.</p>
       </fos:notes>
       <fos:examples>
          <fos:example>
@@ -20563,6 +20553,22 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             <fos:test>
                <fos:expression>parse-json("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression>parse-json('"name","city"\r\n"Bob","Berlin"\r\n"Alice","Aachen"\r\n')</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression>parse-json("|name|,|city|\r\n|Bob|,|Berlin|\r\n", map{"quote-character": "|"})</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression>parse-json("Bob,Berlin\r\nAlice,Aachen\r\n", map{headers: false()})</fos:expression>
+               <fos:result>map{"body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression>parse-json("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n", map{return-headers: true()})</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("name","city")("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
          </fos:example>
       </fos:examples>

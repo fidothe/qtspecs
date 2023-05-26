@@ -5773,7 +5773,7 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <?local-function-index?>
             <p>The structured representation of a parsed CSV is described by the
                <code>parsed-csv-structure-record</code>:</p>
-            <?parsed-csv-structure-record?>
+            <?type parsed-csv-structure-record?>
 
             <div3 id="func-parse-csv">
                <head><?function fn:parse-csv?></head>
@@ -6958,36 +6958,69 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <head>Conversion from CSV</head>
 
 
-            <p>JSON is a popular format for exchange of structured data on the web: it is specified in <bibref ref="rfc4180"/>.
-               This section describes facilities
-               allowing JSON data to be converted to and from XDM values.</p>
-
-            <p>This specification describes two ways of representing JSON data losslessly
-               using XDM constructs. The first method uses XDM maps to represent JSON objects, and XDM arrays to
-               represent JSON arrays. The second method represents all JSON constructs using XDM element and attribute nodes.</p>
+            <p>CSV is a popular format for exchange of record-oriented and tabular data on the web. It is a 
+               format with many differing implementations, originally without formal specification. The best 
+               formal definition of the CSV format is <bibref ref="rfc4180"/>, which attempts to specify CSV
+               in a way that provides formal underpinnings and reflects the reality of its use in the wild.  
+               This section describes basic CSV structure and how CSV data can be converted into XDM values.</p>
 
 
-            <div3 id="csv-to-sequences-of-arrays">
+            <div3 id="csv-structures">
+               <head>Basic CSV Structures</head>
+
+
+               <p>CSVs are often thought of as representations of tabular data, like Spreadsheets, with rows 
+                  and columns. RFC 4180 uses slightly more abstract terms, which we follow here.</p>
+
+               <p>RFC 4180 refers to Records and Fields, rather than Rows and Columns. The <code>fn:parse-csv</code> 
+                  function therefore has options to specify the <code>record-separator</code> and 
+                  <code>field-separator</code>, rather than row- or column-separators.</p>
+
+               <p>While CSVs are fundamentally just string fields separated by delimiters, many importers of CSV data, like 
+                  spreadsheet applications, have inferred data types, parsing fields containing only numbers 
+                  as a number type, or converting fields that matched a pattern for date strings into date 
+                  objects. <code>fn:parse-csv</code> makes no attempt to do so, and this is a deliberate 
+                  decision. This automatic type conversion is a well-known source of problems, from telephone 
+                  numbers being interpreted as Octal numbers, to date interpretation switching the months and 
+                  days round. Type conversion is left as an application-level problem, for which XPath already 
+                  provides excellent tools.</p>
+            </div3>
+            <div3 id="csv-to-arrays-of-sequences">
                <head>Representing CSV data using maps and arrays</head>
 
 
-               <p>This section defines a mapping from CSV data to XDM sequences and arrays. One function is available
-                  to support this mapping: <code>fn:parse-csv</code>.
+               <p>This section defines a mapping from CSV data to XDM using the <code>parsed-csv-structure-record</code>.
+                  One function is available to support this mapping: <code>fn:parse-csv</code>.
                   The <code>fn:parse-csv</code> function will accept any string of CSV data as input, and converts it
                   to XDM data values. </p>
 
-               <note><p>There is no equivalent conversion back to a CSV string. The vagaries of the CSV format are such that a lossless conversion to and from a CSV string is, if desired, better achieved with custom text serialization. The informality of the format, and the lack of widespread adoption of the closest thing to a formal standard for CSV, RFC 4180, makes it difficult.</p></note>
+               <note>
+                  <p>There is no equivalent conversion back to a CSV string. The vagaries of the CSV format are such that 
+                     a lossless conversion to and from a CSV string is, if desired, better achieved with custom text 
+                     serialization. The informality of the format, and the lack of widespread adoption of RFC 4180, 
+                     makes it difficult.</p>
+               </note>
 
                <p>The representation of CSV data produced by the <code>fn:parse-csv</code> function
-                  has been chosen with ease of manipulation as a design aim. For example, a simple JSON object
-                  such as <code>{"Sun":1, "Mon":2, "Tue":3, ...}</code> produces a simple map, so if the result
-                  of parsing is held in <code>$weekdays</code>, the number for a given weekday can be extracted
-                  using an expression such as <code>$weekdays?Tue</code>. Similarly, a simple array such as
-                  <code>["Sun", "Mon", "Tue", ...]</code> produces an array that can be addressed as, for example,
-                  <code>$weekdays(3)</code>. A more deeply nested structure can be addressed in a similar way:
-                  for example if the JSON text is an array of person objects, each of which has a property named
-                  "phones" which is an array of strings containing phone numbers, then the first phone number of
-                  each person in the data can be addressed as <code>$data?phones(1)</code>.</p>
+                  has been chosen with ease of manipulation as a design aim. All records are returned as sequences 
+                  of <code>xs:string</code> values, wrapped in an <code>array</code> representing the entire body.</p>
+
+               <p>The returned headers map can be used to access fields in a result by name:</p>
+
+               <eg><![CDATA[
+let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin"), 
+    $headers := $parsed-csv?headers 
+return $parsed-csv?body(1)[$headers("name")]
+               ]]></eg>
+
+               <p>When the headers within a CSV are not sufficient, a separate map can be used in the same way as the returned headers map:</p>
+
+               <eg><![CDATA[
+let $my-headers := map{"first-name": 1, "last-name": 2},
+    $parsed-csv := fn:parse-csv("name,,city\r\nBob,Mustermann,Berlin")
+    $data := $parsed-csv?body
+return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-name]), ", ")
+                  ]]> </eg>
             </div3>
          </div2>
       </div1>
