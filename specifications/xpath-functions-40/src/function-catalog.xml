@@ -20537,7 +20537,8 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          </fos:options>
       </fos:rules>
       <fos:errors>
-         <p>TODO</p>
+         <p>A dynamic error <errorref class="CV" code="0001"/> occurs if the value of
+            <code>$csv</code> does not conform to the <bibref ref="rfc4180"/> grammar for quoted fields.</p>
       </fos:errors>
       <fos:notes>
          <p>All fields are returned as <code>xs:string</code> values.</p>
@@ -20568,7 +20569,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             </fos:test>
             <fos:test>
                <fos:expression>parse-json("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n", map{return-headers: true()})</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("name","city")("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("name","city"), ("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
          </fos:example>
       </fos:examples>
