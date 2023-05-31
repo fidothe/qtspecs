@@ -20548,27 +20548,27 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
       <fos:examples>
          <fos:example>
             <fos:test>
-               <fos:expression>parse-json("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n")</fos:expression>
+               <fos:expression>parse-csv("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n")</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-json("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
+               <fos:expression>parse-csv("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-json('"name","city"\r\n"Bob","Berlin"\r\n"Alice","Aachen"\r\n')</fos:expression>
+               <fos:expression>parse-csv('"name","city"\r\n"Bob","Berlin"\r\n"Alice","Aachen"\r\n')</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-json("|name|,|city|\r\n|Bob|,|Berlin|\r\n", map{"quote-character": "|"})</fos:expression>
+               <fos:expression>parse-csv("|name|,|city|\r\n|Bob|,|Berlin|\r\n", map{"quote-character": "|"})</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-json("Bob,Berlin\r\nAlice,Aachen\r\n", map{headers: false()})</fos:expression>
+               <fos:expression>parse-csv("Bob,Berlin\r\nAlice,Aachen\r\n", map{headers: false()})</fos:expression>
                <fos:result>map{"body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-json("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n", map{return-headers: true()})</fos:expression>
+               <fos:expression>parse-csv("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n", map{return-headers: true()})</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("name","city"), ("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
          </fos:example>

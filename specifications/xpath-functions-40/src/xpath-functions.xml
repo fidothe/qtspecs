@@ -6958,9 +6958,9 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
 
 
             <p>Comma separated values (CSV) refers to a wide variety of plain-text tabular data with
-               fields and records separated by standard character delimters. CSV has developed
+               fields and records separated by standard character delimiters. CSV has developed
                informally for decades, and this implementation refers to <bibref ref="rfc4180"/>,
-               which provides a standardised grammar. This section defines a mapping from RFC 4180
+               which provides a standardized grammar. This section defines a mapping from RFC 4180
                to constructs in the XDM model, and provides illustrative examples of how these
                constructs can be used in conjunction with existing language features to provide rich
                processing of CSV data.</p>
@@ -6974,7 +6974,7 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                   A field is a simple <code>xs:string</code> value. Fields are separated by a
                   delimiter string, the <term>field separator</term>, conventionally a single comma
                      (<code>,</code>). Records are separated by a different delimiter string, the
-                     <term>recod separator</term>, conventionally the line ending character sequence
+                     <term>record separator</term>, conventionally the line ending character sequence
                   of the generator platform (CRLF on Windows). Fields that contain one of the
                   delimiter characters must be quoted by beginning and ending the field with a
                      <term>quote character</term>, conventionally <code>"</code>, the double quote.
@@ -7091,6 +7091,7 @@ let $my-headers := map{"first-name": 1, "last-name": 2},
     $parsed-csv := fn:parse-csv("Bob,Mustermann,Berlin\r\n")
     $data := $parsed-csv?body
 return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-name]), ", ")
+(: "Mustermann, Bob" :)
                   ]]></eg>
                </div4>
                <div4>
@@ -7111,7 +7112,7 @@ let $mapper := function($record as xs:string*) as item()* {
     $parsed-csv := fn:parse-csv("Date,Visitor,Visiting\r\n2023-05-31,Bob,Alice\r\n"),
     $headers := $parsed-csv?headers
 return array:for-each($parsed-csv?body, $mapper)
-(: [(xs:date(2023, 05, 31), "Bob", "Alice")] :)
+(: [(xs:date("2023-05-31"), "Bob", "Alice")] :)
                   ]]></eg>
 
                   <p>This example maps every field except one to a number:</p>
@@ -7126,7 +7127,7 @@ let $mapper := function($record as xs:string*) as item()* {
     $parsed-csv := fn:parse-csv("Date,Quantity,Unit cost\r\n2023-05-31,100,5.3\r\n"),
     $headers := $parsed-csv?headers
 return array:for-each($parsed-csv?body, $mapper)
-(: [(xs:date(2023, 05, 31), 100, 5.3)] :)
+(: [(xs:date("2023-05-31"), 100, 5.3)] :)
                   ]]></eg>
                </div4>
             </div3>
