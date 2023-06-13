@@ -54,6 +54,7 @@
       <fos:record extensible="false">
          <fos:field name="body" type="array(xs:string*)" required="true"/>
          <fos:field name="headers" type="map(xs:string,xs:integer)" required="false"/>
+         <fos:field name="headers-record" type="xs:string*" required="false"/>
       </fos:record>
    </fos:type>
 
@@ -20509,15 +20510,25 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:default>'"'</fos:default>
             </fos:option>
             <fos:option key="headers">
-               <fos:meaning>Determines whether the first record from the CSV should be treated as a list of column headers and returned as a name: field-number map in the <code>headers</code> entry of the returned map.</fos:meaning>
+               <fos:meaning>Determines whether the first record from the CSV should be treated as a
+                  list of column headers and returned as a name: field-number map in the
+                     <code>headers</code> entry of the returned map. Additionally, the first record
+                  will be returned in the <code>headers-record</code> entry of the returned
+                  map.</fos:meaning>
                <fos:type>xs:boolean</fos:type>
                <fos:default>true</fos:default>
                <fos:values>
-                  <fos:value value="true">
-                     The first record is read and turned into a map of the form <code>{ "Field-header": Field-number }</code>. The first record will then not be returned as part of the array-of-sequences in the <code>body</code> entry of the returned map. If there are duplicate field headers, only the first will be included.
+                  <fos:value value="true"> The first record is read and turned into a map of the
+                     form <code>{ "Field-header": Field-number }</code>. The first record will then
+                     not be returned as part of the array-of-sequences in the <code>body</code>
+                     entry of the returned map. If there are duplicate field headers, only the first
+                     will be included. Any fields whose value is the empty string will also be
+                     omitted. The first record will also be returned as the
+                     <code>headers-record</code> entry of the returned map
                   </fos:value>
-                  <fos:value value="false">
-                     No <code>headers</code> map will be returned in the result map, and the first record will be included in the returned <code>body</code> array.
+                  <fos:value value="false"> No <code>headers</code> map or
+                     <code>headers-record</code> will be returned in the result map, and the first
+                     record will be included in the returned <code>body</code> array.
                   </fos:value>
                </fos:values>
             </fos:option>
@@ -20531,6 +20542,19 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                   </fos:value>
                   <fos:value value="true">
                      The first record will be included in the returned <code>body</code> array even if the <code>headers</code> option is <code>true()</code>.
+                  </fos:value>
+               </fos:values>
+            </fos:option>
+            <fos:option key="trim-whitespace">
+               <fos:meaning>Determines whether fields should have leading and trailing whitespace removed before being returned.</fos:meaning>
+               <fos:type>xs:boolean</fos:type>
+               <fos:default>false</fos:default>
+               <fos:values>
+                  <fos:value value="false">
+                     Fields will be returned with any leading or trailing whitespace intact.
+                  </fos:value>
+                  <fos:value value="true">
+                     Fields will be returned with leading or trailing whitespace removed.
                   </fos:value>
                </fos:values>
             </fos:option>
@@ -20549,19 +20573,23 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <fos:test>
                <fos:expression>parse-csv("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n")</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
                <fos:expression>parse-csv("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
                <fos:expression>parse-csv('"name","city"\r\n"Bob","Berlin"\r\n"Alice","Aachen"\r\n')</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+            </fos:test>
+            <fos:test>
+               <fos:expression xml:space="preserve">parse-csv("name  ,city  \r\nBob   ,Berlin\r\nAlice ,Aachen\r\n", map{"trim-whitespace: true()})</fos:expression>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
                <fos:expression>parse-csv("|name|,|city|\r\n|Bob|,|Berlin|\r\n", map{"quote-character": "|"})</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("Bob","Berlin")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin")]}</fos:result>
             </fos:test>
             <fos:test>
                <fos:expression>parse-csv("Bob,Berlin\r\nAlice,Aachen\r\n", map{headers: false()})</fos:expression>
@@ -20569,7 +20597,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             </fos:test>
             <fos:test>
                <fos:expression>parse-csv("name,city\r\nBob,Berlin\r\nAlice,Aachen\r\n", map{return-headers: true()})</fos:expression>
-               <fos:result>map{"headers": map{"name":1, "city":2}, "body": [("name","city"), ("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
+               <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("name","city"), ("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
          </fos:example>
       </fos:examples>

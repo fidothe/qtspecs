@@ -7094,7 +7094,30 @@ return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-nam
 (: "Mustermann, Bob" :)
                   ]]></eg>
                </div4>
-               <div4>
+               <div4 id="csv-to-html-table">
+                  <head>Converting a CSV into an HTML-style table</head>
+
+                  <p>Direct conversion is a matter of iterating across the records and fields to
+                     generate <code>&lt;tr&gt;</code> and <code>&lt;td&gt;</code> elements. Care
+                     needs to be taken because the CSV is an array of sequences.</p>
+
+                  <eg><![CDATA[
+let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin\r\n"),
+    $headers := $parsed-csv?headers-record
+return <table>
+   <thead>{
+      for $header in $headers
+         return <th>{ $header }</th>
+   }</thead>
+   <tbody>{
+      array:for-each($parsed-csv?body, function($record as xs:string*) as item() {
+         return <tr>{ for $field in $record return <td>{ $field }</td> }</tr>
+      })
+   }</tbody>
+</table>
+                  ]]></eg>
+               </div4>
+               <div4 id="converting-csv-fields-to-other-data-types">
                   <head>Converting fields from string to other data types</head>
 
 
