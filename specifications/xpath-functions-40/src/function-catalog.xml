@@ -20500,9 +20500,9 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:default>","</fos:default>
             </fos:option>
             <fos:option key="record-separator">
-               <fos:meaning>The characters used to separate records within the CSV string.</fos:meaning>
+               <fos:meaning>The characters used to separate records within the CSV string. Defaults to matching any of CRLF, LF, or CR.</fos:meaning>
                <fos:type>xs:string</fos:type>
-               <fos:default>"\r\n"</fos:default>
+               <fos:default>("\r\n", "\n", "\r")</fos:default>
             </fos:option>
             <fos:option key="quote-character">
                <fos:meaning>The character used to quote fields within the CSV string.</fos:meaning>
@@ -20576,7 +20576,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
-               <fos:expression>parse-csv("name;city\nBob;Berlin\nAlice;Aachen\n", map{"record-separator": "\n", "field-separator": ";"})</fos:expression>
+               <fos:expression>parse-csv("name;city§Bob;Berlin§Alice;Aachen", map{"record-separator": "§", "field-separator": ";"})</fos:expression>
                <fos:result>map{"headers": map{"name":1, "city":2}, "headers-record": ("name", "city"), "body": [("Bob","Berlin"), ("Alice","Aachen")]}</fos:result>
             </fos:test>
             <fos:test>
