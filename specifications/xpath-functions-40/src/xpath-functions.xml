@@ -5777,6 +5777,9 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <div3 id="func-parse-csv">
                <head><?function fn:parse-csv?></head>
             </div3>
+            <div3 id="func-csv-to-xml">
+               <head><?function fn:csv-to-xml?></head>
+            </div3>
          </div2>
          <div2 id="json">
             <head>Conversion to and from JSON</head>
@@ -7111,6 +7114,27 @@ return <table>
    }</thead>
    <tbody>{
       array:for-each($parsed-csv?body, function($record as xs:string*) as item() {
+         return <tr>{ for $field in $record return <td>{ $field }</td> }</tr>
+      })
+   }</tbody>
+</table>
+                  ]]></eg>
+               </div4>
+               <div4 id="csv-to-html-table-csv-to-xml">
+                  <head>Converting a CSV into an HTML-style table using <code>fn:csv-to-xml</code></head>
+
+                  <p>The <code>fn:csv-to-xml</code> function makes these kinds of conversion-to-XML-table tasks simpler.</p>
+
+                  <eg><![CDATA[
+let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin\r\n"),
+    $headers := $parsed-csv?headers-record
+return <table>
+   <thead>{
+      for $header in $headers
+         return <th>{ $header }</th>
+   }</thead>
+   <tbody>{
+      csv-to-xml($parsed-csv, function($record, map { "field-order": ("city", "name") }) {
          return <tr>{ for $field in $record return <td>{ $field }</td> }</tr>
       })
    }</tbody>

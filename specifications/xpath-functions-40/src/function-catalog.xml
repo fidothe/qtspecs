@@ -20603,6 +20603,109 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
       </fos:examples>
    </fos:function>
 
+   <fos:function name="csv-to-xml" prefix="fn">
+      <fos:signatures>
+         <fos:proto name="csv-to-xml" return-type="item()*">
+            <fos:arg name="csv" type-ref="parsed-csv-structure-record"/>
+            <fos:arg name="record-func" type="function(xs:string*) as item()*"/>
+            <fos:arg name="options" type="map(*)" usage="inspection" default="map{}"/>
+         </fos:proto>
+      </fos:signatures>
+      <fos:properties>
+         <fos:property>deterministic</fos:property>
+         <fos:property dependency="static-base-uri">context-dependent</fos:property>
+         <fos:property>focus-independent</fos:property>
+      </fos:properties>
+      <fos:summary>
+         <p>Iterates over the body records from a <code>parsed-csv-structure-record</code>, calling the supplied <code>$record-func</code> function argument with each in turn.</p>
+      </fos:summary>
+      <fos:rules>
+         <p>The effect of the two-argument form of this function is the same as calling the
+            three-argument form with an empty map as the value of the <code>$options</code>
+            argument.</p>
+
+         <p>The first argument is a parsed CSV data structure,
+               <code>parsed-csv-structure-record</code>, as defined in <specref ref="csv-structures"
+            />.</p>
+
+         <p>The second argument is a function that takes a sequence of <code>xs:string</code> values
+            as its only argument, returning a sequence of <code>item()</code>s.</p>
+
+         <p>If <code>$csv</code> is the empty sequence, the function returns the empty sequence.</p>
+
+         <p>The <code>$options</code> argument can be used to control the way records passed to the
+               <code>record-func</code> are structured. The <termref
+               def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
+
+         <p>The entries that may appear in the <code>$options</code> map are as follows:</p>
+
+         <fos:options>
+            <fos:option key="field-order">
+               <fos:meaning>A sequence indicating which fields to return and in which order. If this
+                  option is missing or the empty sequence, all fields are returned in their natural
+                  order. If an item in the sequence is an integer, it is treated as the index of the
+                  field in the record, if a string, it's used to look up the index from the
+                     <code>$csv?headers</code> map.</fos:meaning>
+               <fos:type>(xs:string,xs:integer)*</fos:type>
+               <fos:default>()</fos:default>
+            </fos:option>
+         </fos:options>
+      </fos:rules>
+      <fos:examples>
+         <fos:variable name="csv" id="parsed-csv-1"><![CDATA[
+map {
+   "headers": map { "Name": 1, "City": 2 },
+   "headers-record": ("Name", "City"),
+   "body": [
+      ("Alice, "Aachen"),
+      ("Bob", "Berlin")
+   ]
+}]]>
+         </fos:variable>
+         <fos:variable name="record-func" id="simple-record-func"><![CDATA[
+function($record as xs:string*) as item() {
+   return <tr>{
+      for $field in $record return <td>{ $field }</td>
+   }</tr>
+}]]>
+         </fos:variable>
+         <fos:example>
+            <fos:test use="parsed-csv-1 simple-record-func">
+               <fos:expression><![CDATA[
+csv-to-xml($csv, $record-func)]]>
+               </fos:expression>
+               <fos:result normalize-space="true"><![CDATA[
+<tr>
+   <td>Alice</td>
+   <td>Aachen</td>
+</tr>
+<tr>
+   <td>Bob</td>
+   <td>Berlin</td>
+</tr>]]>
+               </fos:result>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <fos:test use="parsed-csv-1 simple-record-func">
+               <fos:expression><![CDATA[
+csv-to-xml($csv, $record-func, map { "field-order": (2, 1) })]]>
+               </fos:expression>
+               <fos:result normalize-space="true"><![CDATA[
+<tr>
+   <td>Aachen</td>
+   <td>Alice</td>
+</tr>
+<tr>
+   <td>Berlin</td>
+   <td>Bob</td>
+</tr>]]>
+               </fos:result>
+            </fos:test>
+         </fos:example>
+      </fos:examples>
+   </fos:function>
+
    <fos:function name="parse-json" prefix="fn">
       <fos:signatures>
          <fos:proto name="parse-json" return-type="item()?">
