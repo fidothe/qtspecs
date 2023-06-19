@@ -10880,32 +10880,23 @@ ISBN 0 521 77752 6.</bibl>
                <p>Raised by <code>fn:parse-csv</code> if a syntax error in the quoting of one of the
                   fields in the input CSV is found.</p>
             </error>
-            <error class="CV" code="0002" label="Illegal CSV field-separator error."
+            <error class="CV" code="0002" label="Illegal CSV delimiter error."
                type="dynamic">
-               <p>Raised by <code>fn:parse-csv</code> if the <code>field-separator</code> option is
-                  set to an illegal value.</p>
+               <p>Raised by <code>fn:parse-csv</code> if the <code>field-separator</code>,
+                  <code>record-separator</code>, or <code>quote-character</code> option is set to
+                  an illegal value.</p>
             </error>
-            <error class="CV" code="0003" label="Illegal CSV record-separator error."
-               type="dynamic">
-               <p>Raised by <code>fn:parse-csv</code> if the <code>record-separator</code> option is
-                  set to an illegal value.</p>
-            </error>
-            <error class="CV" code="0004" label="Illegal CSV quote-character error."
-               type="dynamic">
-               <p>Raised by <code>fn:parse-csv</code> if the <code>quote-character</code> option is
-                  set to an illegal value.</p>
-            </error>
-            <error class="CV" code="0005" label="duplicate CSV delimiter error."
+            <error class="CV" code="0003" label="duplicate CSV delimiter error."
                type="dynamic">
                <p>Raised by <code>fn:parse-csv</code> if any of the delimiter characters have been
                   set to the same value.</p>
             </error>
-            <error class="CV" code="0006" label="Argument supplied is not a known field header."
+            <error class="CV" code="0004" label="Argument supplied is not a known field header."
                type="dynamic">
                <p>Raised by <code>fn:csv-to-xml()?field</code> if its <code>$key</code> argument is
                   an <code>xs:string</code> and is not one of the header keys.</p>
             </error>
-            <error class="CV" code="0007" label="Argument not a parsed-csv-structure-record."
+            <error class="CV" code="0005" label="Argument not a parsed-csv-structure-record."
                type="dynamic">
                <p>Raised by <code>fn:csv-to-xml</code> if its <code>$csv</code> argument does not
                   match the <code>parsed-csv-structure-record</code> record type.</p>
