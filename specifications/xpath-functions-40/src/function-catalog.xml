@@ -55,6 +55,7 @@
          <fos:field name="body" type="array(xs:string*)" required="true"/>
          <fos:field name="headers" type="map(xs:string,xs:integer)" required="false"/>
          <fos:field name="headers-record" type="xs:string*" required="false"/>
+         <fos:field name="field" required="true" type="function(xs:string*, item()) as xs:string"/>
       </fos:record>
    </fos:type>
 
@@ -20538,11 +20539,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                      form <code>{ "Field-header": Field-number }</code>, in the returned map's
                      <code>headers</code> entry. Implmentations <rfc2119>must</rfc2119> exclude
                      the first record from the returned map's <code>body</code> entry, and return it
-                     as the returned map's <code>headers-record</code> entry. If there are duplicate
-                     field headers, implementations <rfc2119>must</rfc2119> include only the first
-                     occurence in the <code>headers</code> entry, ignoring subsequent entries. Any
-                     fields in the first record whose value is the empty string
-                     <rfc2119>must</rfc2119> also be omitted from the <code>headers</code> entry.
+                     as the returned map's <code>headers-record</code> entry.
                   </fos:value>
                   <fos:value value="false"> Implementations <rfc2119>must not</rfc2119> include
                      <code>headers</code> or <code>headers-record</code> entries in the returned
@@ -20570,7 +20567,62 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             </fos:option>
          </fos:options>
 
-         <p>The </p>
+         <p>The result of the function is a <code>parsed-csv-structure-record</code>, a map with
+            string keys containing at least two entries, <code>body</code>, and <code>field</code>,
+            with another two optional entries, <code>headers</code> and
+            <code>headers-record</code>.</p>
+         <olist>
+            <item>
+               <p>The entry with key <code>"body"</code> holds the records of the CSV as an array of
+                  sequences of strings, <code>array(xs:string*)</code>. If there is no data in the
+                  CSV, this will be empty.</p>
+            </item>
+            <item>
+               <p>The entry with key <code>"field"</code> is an arity-two function <var>F</var> that
+                  takes a CSV record <var>R</var> (of type <code>xs:string*</code>) and a string or
+                  integer key <var>K</var> as input, and returns the field in <var>R</var> that
+                  corresponds to the position <var>K</var>, if <var>K</var> is an
+                  <code>xs:integer</code>, or the position obtained by looking up <var>K</var> in
+                  the <code>headers</code> map if <var>K</var> is an <code>xs:string</code>.</p>
+
+               <p>TODO: What is the best way to specify dynamic errors that this function might throw?</p>
+
+               <p>The properties of this function are as follows:</p>
+               <ulist>
+                  <item>
+                     <p>name: absent</p>
+                  </item>
+                  <item>
+                     <p>parameter names: (<var>$record</var>, <var>$key</var>)</p>
+                  </item>
+                  <item>
+                     <p>signature: <code>(xs:string*, item()) => xs:string</code></p>
+                  </item>
+                  <item>
+                     <p>non-local variable bindings: none</p>
+                  </item>
+                  <item>
+                     <p>implementation: implementation-dependent</p>
+                  </item>
+                  <item>
+                     <p>errors: A dynamic error <errorref class="CV" code="0006"/> occurs if the supplied <var>$key</var> is a string and does not occur in the map of headers.</p>
+                  </item>
+               </ulist>
+            </item>
+            <item>
+               <p>If present, the entry with key <code>"headers"</code> holds the field headers
+                  (from the first record of the CSV) as a map of field name to position,
+                  <code>map(xs:string, xs:integer)</code>. If there are duplicate field headers,
+                  implementations <rfc2119>must</rfc2119> include only the first occurence in the
+                  <code>headers</code> entry, ignoring subsequent entries. Any fields in the
+                  first record whose value is the empty string <rfc2119>must</rfc2119> also be
+                  omitted.</p>
+            </item>
+            <item>
+               <p>If present, the entry with key <code>"headers-record"</code> holds the first
+                  record of the CSV, a sequence of strings (<code>xs:string*</code>), unaltered.</p>
+            </item>
+         </olist>
       </fos:rules>
       <fos:errors>
          <p>A dynamic error <errorref class="CV" code="0001"/> occurs if the value of
@@ -20596,6 +20648,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:variable name="cr" id="escaped-cr"><![CDATA[char('x0D')]]></fos:variable>
          <fos:variable name="crlf" id="escaped-crlf"><![CDATA[char('x0D')||char('x0A')]]></fos:variable>
          <fos:example>
+            <p>TODO: How should the returned function be written in the <code>&lt;fos:result&gt;</code> elements in this example section?</p>
             <p>Handling any of the default record separators:</p>
             <fos:test use="escaped-crlf">
                <fos:expression>parse-csv(`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`)</fos:expression>
@@ -20759,7 +20812,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          </fos:options>
       </fos:rules>
       <fos:errors>
-         <p>A dynamic error <errorref class="CV" code="0006"/> occurs if <code>$csv</code> does not match type <code>parsed-csv-structure-record</code>.</p>
+         <p>A dynamic error <errorref class="CV" code="0007"/> occurs if <code>$csv</code> does not match type <code>parsed-csv-structure-record</code>.</p>
       </fos:errors>
       <fos:examples>
          <fos:variable name="csv" id="parsed-csv-1"><![CDATA[

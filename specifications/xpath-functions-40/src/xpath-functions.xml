@@ -10900,7 +10900,12 @@ ISBN 0 521 77752 6.</bibl>
                <p>Raised by <code>fn:parse-csv</code> if any of the delimiter characters have been
                   set to the same value.</p>
             </error>
-            <error class="CV" code="0006" label="Argument not a parsed-csv-structure-record."
+            <error class="CV" code="0006" label="Argument supplied is not a known field header."
+               type="dynamic">
+               <p>Raised by <code>fn:csv-to-xml()?field</code> if its <code>$key</code> argument is
+                  an <code>xs:string</code> and is not one of the header keys.</p>
+            </error>
+            <error class="CV" code="0007" label="Argument not a parsed-csv-structure-record."
                type="dynamic">
                <p>Raised by <code>fn:csv-to-xml</code> if its <code>$csv</code> argument does not
                   match the <code>parsed-csv-structure-record</code> record type.</p>
