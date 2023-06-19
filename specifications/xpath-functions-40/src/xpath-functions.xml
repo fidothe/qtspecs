@@ -6976,15 +6976,12 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                   structures, each composed in turn of a sequence of <term>field</term> structures.
                   A field is a simple <code>xs:string</code> value. Fields are separated by a
                   delimiter string, the <term>field separator</term>, conventionally a single comma
-                     (<code>,</code>). Records are separated by a different delimiter string, the
-                     <term>record separator</term>, conventionally the line ending character sequence
-                  of the generator platform (CRLF on Windows). Fields that contain one of the
-                  delimiter characters must be quoted by beginning and ending the field with a
-                     <term>quote character</term>, conventionally <code>"</code>, the double quote.
-                  Fields containing the quote character must escape that character by doubling it,
-                  so a field containing a literal double-quote would escape it by using a second
-                  double quote, <code>character " is used</code> becoming <code>character "" is
-                     used</code>.</p>
+                  (<code>,</code>). Records are separated by a different delimiter string, the
+                  <term>record separator</term>, conventionally the line ending character
+                  sequence of the generator platform (CRLF on Windows). Fields that contain one of
+                  the delimiter characters must be quoted by beginning and ending the field with a
+                  <term>quote character</term>, conventionally <code>"</code>, the double quote
+                  (see <specref ref="csv-field-quoting"/> for more on this).</p>
 
                <p>The first record can be a <term>header</term> record, providing headers for
                   columns in tabular CSV data.</p>
@@ -6995,15 +6992,40 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
 
                <p>Fields are regarded as simple <code>xs:string</code> values, leaving their
                   interpretation as, for example, numbers or dates, or their conversion to other XDM
-                  atomic types to the calling application. See <specref
-                     ref="illustrative-csv-examples"/> for illustrative examples of this.</p>
+                  atomic types to the calling application. Implementations MUST, by default, treat
+                  whitespace within a field as significant and MUST NOT normalize or otherwise alter
+                  it, unless whitespace trimming is explicitly requested by the user.</p>
 
-               <p>If a header record is requested, <code>fn:parse-csv</code> returns that separately
-                  from the body of records.</p>
+               <p>See <specref
+                     ref="illustrative-csv-examples"/> for illustrative examples of this.</p>
 
                <note>
                   <p>Records within a single CSV are not guaranteed to be of equal size.</p>
                </note>
+
+               <div4 id="csv-field-quoting">
+                  <head>Field quoting</head>
+
+                  <p>CSVs, per RFC 4180, use character-doubling to escape the quote character, or
+                     one of the other delimiters. This is achieved by wrapping the field with the
+                     quote character. No whitespace is expected between field separator and quote
+                     character:</p>
+
+                  <eg>"Field 1","Field 2, the second","Field 3"</eg>
+
+                  <p>Typically if one field is quoted, all will be.</p>
+
+                  <p>Fields containing the quote character (as mentioned above, conventionally the
+                     double quote <code>"</code>) must be also quoted, and the quote escaped.
+                     Escaping, per RFC 4180, is achieved by doubling the quote character, becoming
+                     <code>""</code> in the case of the double quote. The CSV record:</p>
+
+                  <eg>"Field 1","Field 2","Field ""with quotes"" 3"</eg> 
+
+                  <p>would be parsed into the sequence </p>
+
+                  <eg>("Field 1", "Field 2", 'Field "with quotes" 3')</eg>
+               </div4>
             </div3>
             <div3 id="csv-to-arrays-of-sequences">
                <head>Mapping CSV data to XDM using maps and arrays</head>
@@ -7064,14 +7086,17 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
 
                <p>The following examples illustrate how an application can build more complex processing of the output of <code>fn:parse-csv</code>.</p>
 
+               <p>A variable, <code>$crlf</code> is assumed to be in scope containing the CR and LF characters</p>
+
+               <eg>let $crlf := fn:char('x0D')||fn:char('x0A')</eg>
+
                <div4 id="csv-header-access">
                   <head>Accessing fields using header data</head>
-
 
                   <p>The returned headers map can be used to access fields in a result by name rather than index:</p>
 
                   <eg><![CDATA[
-let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin\r\n"),
+let $parsed-csv := fn:parse-csv(`name,city{$crlf}Bob,Berlin`),
     $headers := $parsed-csv?headers 
 return $parsed-csv?body(1)[$headers("name")]
 (: "Bob" :)
@@ -7081,9 +7106,9 @@ return $parsed-csv?body(1)[$headers("name")]
 
                   <eg><![CDATA[
 let $my-headers := map{"first-name": 1, "last-name": 2},
-    $parsed-csv := fn:parse-csv("name,,city\r\nBob,Mustermann,Berlin\r\n")
+    $parsed-csv := fn:parse-csv(`name,,city${crlf}Bob,Mustermann,Berlin`)
     $data := $parsed-csv?body
-return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-name]), ", ")
+return string-join(($data(1)[$my-headers?last-name], $data(1)[$my-headers?first-name]), ", ")
 (: "Mustermann, Bob" :)
                   ]]></eg>
 
@@ -7091,9 +7116,9 @@ return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-nam
 
                   <eg><![CDATA[
 let $my-headers := map{"first-name": 1, "last-name": 2},
-    $parsed-csv := fn:parse-csv("Bob,Mustermann,Berlin\r\n")
+    $parsed-csv := fn:parse-csv("Bob,Mustermann,Berlin")
     $data := $parsed-csv?body
-return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-name]), ", ")
+return string-join(($data(1)[$my-headers?last-name], $data(1)[$my-headers?first-name]), ", ")
 (: "Mustermann, Bob" :)
                   ]]></eg>
                </div4>
@@ -7104,8 +7129,9 @@ return string-join(($data(1)[$my-headers?last-name], $data[$my-headers?first-nam
                      generate <code>&lt;tr&gt;</code> and <code>&lt;td&gt;</code> elements. Care
                      needs to be taken because the CSV is an array of sequences.</p>
 
+                  <p>Using XQuery:</p>
                   <eg><![CDATA[
-let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin\r\n"),
+let $parsed-csv := fn:parse-csv(`name,city{$crlf}Bob,Berlin`),
     $headers := $parsed-csv?headers-record
 return <table>
    <thead>{
@@ -7119,14 +7145,56 @@ return <table>
    }</tbody>
 </table>
                   ]]></eg>
+
+                  <p>Using XSLT:</p>
+                  <eg><![CDATA[
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:eg="http://example.org/eg"
+  xmlns:array="http://www.w3.org/2005/xpath-functions/array"
+  exclude-result-prefixes="eg array"
+  version="4.0">
+  <xsl:output method="xml" indent="true"/>
+
+  <xsl:template match="." mode="csv-th" expand-text="true">
+    <th>{.}</th>
+  </xsl:template>
+
+  <xsl:template match="." mode="csv-td" expand-text="true">
+    <td>{.}</td>
+  </xsl:template>
+
+  <xsl:function name="eg:tr">
+    <xsl:param name="record" as="xs:string*"/>
+    <tr>
+      <xsl:apply-templates select="$record" mode="csv-td"/>
+    </tr>
+  </xsl:function>
+
+  <xsl:template name="xsl:initial-template">
+    <xsl:variable name="parsed-csv" select="map { 'headers': ('name', 'city'), 'body': [('Bob', 'Berlin'), ('Alice', 'Aachen')] }"/>
+    <table>
+      <thead>
+        <tr>
+          <xsl:apply-templates select="$parsed-csv?headers" mode="csv-th"/>
+        </tr>
+      </thead>
+      <tbody>
+        <xsl:sequence select="array:for-each($parsed-csv?body, eg:tr#1)"/>
+      </tbody>
+    </table>
+  </xsl:template>
+</xsl:stylesheet>
+                  ]]></eg>
                </div4>
                <div4 id="csv-to-html-table-csv-to-xml">
                   <head>Converting a CSV into an HTML-style table using <code>fn:csv-to-xml</code></head>
 
-                  <p>The <code>fn:csv-to-xml</code> function makes these kinds of conversion-to-XML-table tasks simpler.</p>
+                  <p>The <code>fn:csv-to-xml</code> function makes these kinds of
+                     conversion-to-XML-table tasks simpler, enabling iteration across the records of
+                     the table and selecting which fields to return and in what order. Here, in XQuery:</p>
 
                   <eg><![CDATA[
-let $parsed-csv := fn:parse-csv("name,city\r\nBob,Berlin\r\n"),
+let $parsed-csv := fn:parse-csv(`name,city{$crlf}Bob,Berlin`),
     $headers := $parsed-csv?headers-record
 return <table>
    <thead>{
@@ -7134,11 +7202,51 @@ return <table>
          return <th>{ $header }</th>
    }</thead>
    <tbody>{
-      csv-to-xml($parsed-csv, function($record, map { "field-order": ("city", "name") }) {
+      csv-to-xml($parsed-csv, function($record) {
          return <tr>{ for $field in $record return <td>{ $field }</td> }</tr>
-      })
+      }, map { "field-order": ("city", "name") })
    }</tbody>
 </table>
+                  ]]></eg>
+
+                  <p>And in XSLT:</p>
+
+                  <eg><![CDATA[
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:eg="http://example.org/eg"
+  exclude-result-prefixes="eg"
+  version="4.0">
+  <xsl:output method="xml" indent="true"/>
+
+  <xsl:template match="." mode="csv-th" expand-text="true">
+    <th>{.}</th>
+  </xsl:template>
+
+  <xsl:template match="." mode="csv-td" expand-text="true">
+    <td>{.}</td>
+  </xsl:template>
+
+  <xsl:function name="eg:tr">
+    <xsl:param name="record" as="xs:string*"/>
+    <tr>
+      <xsl:apply-templates select="$record" mode="csv-td"/>
+    </tr>
+  </xsl:function>
+
+  <xsl:template name="xsl:initial-template">
+    <xsl:variable name="parsed-csv" select="map { 'headers': ('name', 'city'), 'body': [('Bob', 'Berlin'), ('Alice', 'Aachen')] }"/>
+    <table>
+      <thead>
+        <tr>
+          <xsl:apply-templates select="$parsed-csv?headers" mode="csv-th"/>
+        </tr>
+      </thead>
+      <tbody>
+        <xsl:sequence select="csv-to-xml($parsed-csv?body, eg:tr#1, map { 'field-order': ('city', 'name') })"/>
+      </tbody>
+    </table>
+  </xsl:template>
+</xsl:stylesheet>
                   ]]></eg>
                </div4>
                <div4 id="converting-csv-fields-to-other-data-types">
@@ -7156,7 +7264,7 @@ let $mapper := function($record as xs:string*) as item()* {
             then xs:date($record[$index])
             else $record[$index]
     },
-    $parsed-csv := fn:parse-csv("Date,Visitor,Visiting\r\n2023-05-31,Bob,Alice\r\n"),
+    $parsed-csv := fn:parse-csv(`Date,Visitor,Visiting${crlf}2023-05-31,Bob,Alice`),
     $headers := $parsed-csv?headers
 return array:for-each($parsed-csv?body, $mapper)
 (: [(xs:date("2023-05-31"), "Bob", "Alice")] :)
@@ -7171,7 +7279,7 @@ let $mapper := function($record as xs:string*) as item()* {
             then $record[$index]
             else number($record[$index])
     },
-    $parsed-csv := fn:parse-csv("Date,Quantity,Unit cost\r\n2023-05-31,100,5.3\r\n"),
+    $parsed-csv := fn:parse-csv(`Date,Quantity,Unit cost${crlf}2023-05-31,100,5.3"),
     $headers := $parsed-csv?headers
 return array:for-each($parsed-csv?body, $mapper)
 (: [(xs:date("2023-05-31"), 100, 5.3)] :)
@@ -10771,6 +10879,31 @@ ISBN 0 521 77752 6.</bibl>
                type="dynamic">
                <p>Raised by <code>fn:parse-csv</code> if a syntax error in the quoting of one of the
                   fields in the input CSV is found.</p>
+            </error>
+            <error class="CV" code="0002" label="Illegal CSV field-separator error."
+               type="dynamic">
+               <p>Raised by <code>fn:parse-csv</code> if the <code>field-separator</code> option is
+                  set to an illegal value.</p>
+            </error>
+            <error class="CV" code="0003" label="Illegal CSV record-separator error."
+               type="dynamic">
+               <p>Raised by <code>fn:parse-csv</code> if the <code>record-separator</code> option is
+                  set to an illegal value.</p>
+            </error>
+            <error class="CV" code="0004" label="Illegal CSV quote-character error."
+               type="dynamic">
+               <p>Raised by <code>fn:parse-csv</code> if the <code>quote-character</code> option is
+                  set to an illegal value.</p>
+            </error>
+            <error class="CV" code="0005" label="duplicate CSV delimiter error."
+               type="dynamic">
+               <p>Raised by <code>fn:parse-csv</code> if any of the delimiter characters have been
+                  set to the same value.</p>
+            </error>
+            <error class="CV" code="0006" label="Argument not a parsed-csv-structure-record."
+               type="dynamic">
+               <p>Raised by <code>fn:csv-to-xml</code> if its <code>$csv</code> argument does not
+                  match the <code>parsed-csv-structure-record</code> record type.</p>
             </error>
             <error class="DC" code="0001" label="No context document." type="dynamic">
                <p>Raised by <code>fn:id</code>, <code>fn:idref</code>, and <code>fn:element-with-id</code>
