@@ -50,12 +50,41 @@
       </fos:record>
    </fos:type>
    
-   <fos:type id="parsed-csv-structure-record">
+   <fos:type id="common-csv-options">
+      <fos:record extensible="false">        
+         <fos:field name="row-delimiter" type="xs:string" required="false"/>
+         <fos:field name="column-delimiter" type="xs:string" required="false"/>
+         <fos:field name="quote-character" type="xs:string" required="false"/>
+      </fos:record>
+   </fos:type>
+   
+   <fos:type id="parse-csv-options">
       <fos:record extensible="false">
-         <fos:field name="body" type="array(xs:string*)" required="true"/>
-         <fos:field name="headers" type="map(xs:string,xs:integer)" required="false"/>
-         <fos:field name="headers-record" type="xs:string*" required="false"/>
-         <fos:field name="field" required="true" type="function(xs:string*, item()) as xs:string"/>
+         <fos:field name="row-delimiter" type="xs:string" required="false"/>
+         <fos:field name="column-delimiter" type="xs:string" required="false"/>
+         <fos:field name="quote-character" type="xs:string" required="false"/>
+         <fos:field name="trim-whitespace" type="xs:boolean" required="false"/>
+      </fos:record>
+   </fos:type>
+   
+   <fos:type id="parsed-csv-structure-record">      
+      <fos:record extensible="false">
+         <fos:field name="columns" type="csv-columns-record" required="true"/>
+         <fos:field name="rows" type="csv-row-record*" required="true"/>
+      </fos:record>
+   </fos:type>
+
+   <fos:type id="csv-columns-record">
+      <fos:record extensible="false">
+         <fos:field name="names" type="map(xs:string, xs:integer)" required="true"/>
+         <fos:field name="fields" required="true" type="xs:string*"/>
+      </fos:record>
+   </fos:type>
+
+   <fos:type id="csv-row-record">
+      <fos:record extensible="false">
+         <fos:field name="fields" type="xs:string*" required="true"/>
+         <fos:field name="field" required="true" type="function(union(xs:integer, xs:string)) as xs:string?"/>
       </fos:record>
    </fos:type>
 
@@ -20474,8 +20503,9 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:property>focus-independent</fos:property>
       </fos:properties>
       <fos:summary>
-         <p>Parses CSV data supplied as a string, returning the results in the form
-            of a map typically containing information about headers and the data itself as a sequence of arrays.</p>
+         <p>Parses CSV data supplied as a string, returning the results in the form of a map
+            typically containing information about headers and the data itself as an array of
+            sequences.</p>
       </fos:summary>
       <fos:rules>
          <p>The effect of the one-argument form of this function is the same as calling the
@@ -20782,8 +20812,8 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             argument.</p>
 
          <p>The first argument is a parsed CSV data structure,
-               <code>parsed-csv-structure-record</code>, as defined in <specref ref="csv-structures"
-            />.</p>
+               <code>parsed-csv-structure-record</code>, as defined in <!--<specref ref="csv-structures"
+            />-->.</p>
 
          <p>The second argument is a function that takes a sequence of <code>xs:string</code> values
             as its only argument, returning a sequence of <code>item()</code>s.</p>

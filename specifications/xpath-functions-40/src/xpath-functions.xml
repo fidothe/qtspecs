@@ -5772,7 +5772,7 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <p>The functions listed parse CSV data.</p>
             <?local-function-index?>
             <p>The structured representation of a parsed CSV is described by the
-               <code>parsed-csv-structure-record</code>, see <specref ref="csv-structures"/>.</p>
+               <code>parsed-csv-structure-record</code>, see <!--<specref ref="csv-structures"/>-->.</p>
 
             <div3 id="func-parse-csv">
                <head><?function fn:parse-csv?></head>
@@ -6959,7 +6959,6 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
          <div2 id="csv">
             <head>Conversion from CSV</head>
 
-
             <p>Comma separated values (CSV) refers to a wide variety of plain-text tabular data with
                fields and records separated by standard character delimiters. CSV has developed
                informally for decades, and this implementation refers to <bibref ref="rfc4180"/>,
@@ -6967,118 +6966,242 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                to constructs in the XDM model, and provides illustrative examples of how these
                constructs can be used in conjunction with existing language features to provide rich
                processing of CSV data.</p>
+            
+            <p>A CSV is a 2-dimensional tabular data structure consisting of multiple rows. Each
+               <term>row</term> contains multiple fields. Each <term>field</term>'s position in
+               the row is organised by <term>column</term> located in a <term>column</term> Fields
+               across records are members of a <term>column</term>, identified by position and
+               possibly name. Each field contains a single string value. Column names can be
+               assigned within a CSV using an optional <term>header row</term>.</p>
+            
+            <p>The rows and fields from this specification map directly to the <term>record</term>
+               and field structures defined in RFC 4180, which has no explicit structure to
+               represent columns.</p>
+            
+            <p>A row can be thought of as analogous to both a sequence of fields and a map of fields
+               (when columns are named). Fields are ordered left-to-right and thus have a position,
+               as with an array. Named columns allow fields to be retrieved by name, as with a
+               map.</p>
+            
+            <p>Fields are simple strings. A field that contains reserved characters (one of the
+               delimiters) must be quoted, and the quote character must be escaped if it occurs
+               within a field. (See <specref ref="csv-field-quoting"/>.)</p>
+            
+            <p>The functions for processing CSV-formatted data are built on
+               <code>fn:parse-csv</code>, which provides a simple representation of a parsed CSV
+               as a sequence of arrays-of-strings, <code>array(xs:string)*</code>, handling row and
+               column delimiters, and quoting.</p>
+            
+            <p>The <code>fn:csv-to-xml</code> and <code>fn:csv-to-xdm</code> functions provide more
+               sophisticated processing.</p>
+            
+            
+            <div3 id="common-parsing-options">
+               <head>Common parsing options</head>
 
-            <div3 id="csv-structures">
-               <head>Basic CSV Structures</head>
+               <p>All three functions: <code>fn:parse-csv</code>, <code>fn:csv-to-xml</code>, and
+                  <code>fn:csv-to-xdm</code>, take options to control basic parsing, consisting
+                  of specifying the various delimiters. These core delimiter options are used by the
+                  functions that generate CSV data:</p>
+               
+               <?type common-csv-options ?>
+               
+               <p>Additionally, the parsing functions share an additional option to control whether
+                  leading and trailing whitespace should be stripped or not.</p>
+               
+               <?type parse-csv-options ?>
+            </div3>
+            
+            <div3 id="csv-delimiters">
+               <head>CSV delimiters</head>
+               
+               
+               <div4 id="row-delimiters">
+                  <head>Row delimiters</head>
+                  
+                  <p>Rows in CSV are typically delimited with CRLF, LF, or CR line endings, although
+                     field quoting means that there is not always a one-to-one mapping between line
+                     and row in a file.</p>
+                  
+                  <p>The row delimiter defaults to matching any of CRLF (<code><![CDATA[&#x0D;&#x0A;]]></code>),
+                     LF (<code><![CDATA[&#x0A;]]></code>), or CR (<code><![CDATA[&#x0D;]]></code>). Valid values for the row
+                     delimiter are a single unicode character, or one of CRLF, LF, or CR, that has
+                     not been marked for use as the column delimiter. Implementations
+                     <rfc2119>must</rfc2119> raise <errorref class="CV" code="0002"/> if the
+                     <code>row-delimiter</code> option is set to a mutli-character string other
+                     than CRLF (<code><![CDATA[&#x0D;&#x0A;]]></code>), and <errorref class="CV" code="0003"/>
+                     if the same string has been set for row or column delimiter, or quote
+                     character.</p>
+              </div4>
 
-
-               <p>RFC 4180 describes CSVs being composed a sequence of <term>record</term>
-                  structures, each composed in turn of a sequence of <term>field</term> structures.
-                  A field is a simple <code>xs:string</code> value. Fields are separated by a
-                  delimiter string, the <term>field separator</term>, conventionally a single comma
-                  (<code>,</code>). Records are separated by a different delimiter string, the
-                  <term>record separator</term>, conventionally the line ending character
-                  sequence of the generator platform (CRLF on Windows). Fields that contain one of
-                  the delimiter characters must be quoted by beginning and ending the field with a
-                  <term>quote character</term>, conventionally <code>"</code>, the double quote
-                  (see <specref ref="csv-field-quoting"/> for more on this).</p>
-
-               <p>The first record can be a <term>header</term> record, providing headers for
-                  columns in tabular CSV data.</p>
-
-               <p>The <code>fn:parse-csv</code> function provides a mechanism to specify these
-                  delimiters via the <code>record-separator</code>, <code>field-separator</code>,
-                  and <code>quote-character</code> options.</p>
-
-               <p>Fields are regarded as simple <code>xs:string</code> values, leaving their
-                  interpretation as, for example, numbers or dates, or their conversion to other XDM
-                  atomic types to the calling application. Implementations MUST, by default, treat
-                  whitespace within a field as significant and MUST NOT normalize or otherwise alter
-                  it, unless whitespace trimming is explicitly requested by the user.</p>
-
-               <p>See <specref
-                     ref="illustrative-csv-examples"/> for illustrative examples of this.</p>
-
-               <note>
-                  <p>Records within a single CSV are not guaranteed to be of equal size.</p>
-               </note>
-
-               <div4 id="csv-field-quoting">
-                  <head>Field quoting</head>
-
-                  <p>CSVs, per RFC 4180, use character-doubling to escape the quote character, or
-                     one of the other delimiters. This is achieved by wrapping the field with the
-                     quote character. No whitespace is expected between field separator and quote
-                     character:</p>
-
-                  <eg>"Field 1","Field 2, the second","Field 3"</eg>
-
-                  <p>Typically if one field is quoted, all will be.</p>
-
-                  <p>Fields containing the quote character (as mentioned above, conventionally the
-                     double quote <code>"</code>) must be also quoted, and the quote escaped.
-                     Escaping, per RFC 4180, is achieved by doubling the quote character, becoming
-                     <code>""</code> in the case of the double quote. The CSV record:</p>
-
-                  <eg>"Field 1","Field 2","Field ""with quotes"" 3"</eg> 
-
-                  <p>would be parsed into the sequence </p>
-
-                  <eg>("Field 1", "Field 2", 'Field "with quotes" 3')</eg>
+               <div4 id="column-delimiters">
+                  <head>Column/Field delimiters</head>
+                  
+                  <p>Fields in CSV are typically delimited with a comma. Files with other field
+                     delimiters are common, especially when the comma has data significance, for
+                     example with the use of the decimal comma in much of the world (there the
+                     delimiter is usually the semicolon).</p>
+                  
+                  <p>The column delimiter defaults to the comma <code>","</code>. Valid values for
+                     the column delimiter are a single unicode character, that has not been marked
+                     for use as the row delimiter. Implementations <rfc2119>must</rfc2119> raise
+                     <errorref class="CV" code="0002"/> if the <code>column-delimiter</code>
+                     option is set to a mutli-character string, and <errorref class="CV" code="0003"
+                     /> if the same string has been set for row or column delimiter, or quote
+                     character.</p>
                </div4>
             </div3>
-            <div3 id="csv-to-arrays-of-sequences">
-               <head>Mapping CSV data to XDM using maps and arrays</head>
+               
+            <div3 id="csv-field-quoting">
+               <head>Field quoting</head>
+               
+               <p>CSVs, per RFC 4180, require that fields be wrapped with a quote character if they
+                  contain either the row or column delimiter. This is achieved by wrapping the field
+                  with the quote character:</p>
+               
+               <eg>"A single field, with a comma","another field containing CRLF
+                  within it"</eg>
+               
+               <p>If a field is to contain the quote character, it must be escaped by preceding it
+                  with itself, as with escaping double quotes in XPath (see <xspecref
+                     ref="id-literals" spec="XP40"/>). Implementations <rfc2119>must</rfc2119> raise
+                  <errorref class="CV" code="0001"/> if a quote character appears within a field
+                  incorrectly escaped.</p>
+               
+               <eg>incorrectly escaped " quote character</eg>
+               
+               <p>The quotes surrounding quoted fields are not included in their content. The
+                  following input string, when parsed, would produce a sequence of strings, as shown
+                  below:</p>
+               
+               <eg>'"Field 1","Field 2","Field ""with quotes"" 3"'</eg>
+               
+               <eg>('Field 1', 'Field 2', 'Field "with quotes" 3')</eg>
+               
+               <p>The quote character defaults to the double quote <code>"</code>.</p>
+               
+               <div4 id="csv-field-quoting-column-delimiters">
+                  <head>Field quoting and column delimiters</head>
+                  
+                  <p>No space is allowed between the column delimiter and a quote. Implementations
+                     <rfc2119>must</rfc2119> raise <errorref class="CV" code="0001"/> if
+                     whitespace or other characters occur between a quote character and the nearest
+                     column delimiter.</p>
+                  
+                  <p>The following example is illegal and parsing it should raise an error.</p>
+                  
+                  <eg>'"Field 1", "Field 2", "Field 3"'</eg>
+                  
+               </div4>
+            </div3>               
+
+            <div3 id="basic-csv-to-xdm-mapping">
+               <head>Basic mapping of CSV to XDM</head>
+
+               <p>The basic output from <code>fn:parse-csv</code> returns a sequence of rows, where
+                  each row is simply mapped to an array of <code>xs:string</code> values.</p>
+
+               <p>The first row of the CSV is returned as with all the other rows.
+                  <code>fn:parse-csv</code> does not distinguish between a header row and data
+                  rows, and returns all of them.</p>
+
+               <p>There is an expectation that, in the general case, all rows in a given CSV will
+                  have the same number of columns, but there is no guarantee of this.</p>
+
+               <eg>
+"Column 1,Column 2,Column 3
+Field 1A,Field 1B,Field 1C
+Field 2A,Field 2B,Field 2C"
+               </eg>
+
+               <p>Produces</p>
+
+               <eg>
+(
+   ["Column 1", "Column 2", "Column 3"],
+   ["Field 1A", "Field 1B", "Field 1C"],
+   ["Field 2A", "Field 2B", "Field 2C"]
+)
+               </eg>
+            </div3>
+
+            <div3 id="csv-to-xdm-mapping">
+               <head>Mapping CSV data to XDM in <code>fn:csv-to-xdm</code></head>
 
 
-               <p>The fundamental XDM structure for CSV data is the <code>parsed-csv-structure-record</code> record returned by <code>fn:parse-csv</code>, defined as follows:</p>
-               <?type parsed-csv-structure-record?>
+               <p>The <code>fn:csv-to-xdm</code> function returns a
+                  <code>parsed-csv-structure-record</code>:</p>
+               
+               <?type parsed-csv-structure-record ?>
+                              
+               <div4 id="csv-xdm-columns">
+                  <head>The <code>columns</code> entry</head>
+                  
+                  <p>The <code>columns</code> entry describes how columns map to names, as well as
+                     providing all the fields in the header row that was used to generate the column
+                     names.</p>
+                  
+                  <?type csv-columns-record ?>
+                  
+                  <p>It's required. If column names were not extracted, then implementations
+                     <rfc2119>must</rfc2119> return a <code>csv-columns-record</code> whose
+                     <code>names</code> entry is an empty map, and whose <code>fields</code>
+                     entry is the empty sequence.</p>
+               </div4>
 
-               <p>The components of <code>parsed-csv-structure-record</code> can be broken out and described as follows:</p>
+               <div4 id="csv-xdm-rows">
+                  <head>The <code>rows</code> entry</head>
+                  
+                  <p>The <code>rows</code> entry returns the rows themselves. It is a sequence of
+                     <code>csv-row</code> records. If the CSV was empty of rows, implementations
+                     <rfc2119>must</rfc2119> return a <code>rows</code> entry consisting of the
+                     empty sequence.</p>                  
+               </div4>
+               
+               <div4 id="csv-xdm-row">
+                  <head>The <code>csv-row</code> record</head>
 
-               <table role="data">
-                  <thead>
-                     <tr>
-                        <th>Key</th>
-                        <th>XDM construct</th>
-                        <th>Type signature</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     <tr>
-                        <td>Field</td>
-                        <td>A string</td>
-                        <td><code>xs:string</code></td>
-                     </tr>
-                     <tr>
-                        <td>Record</td>
-                        <td>Sequence of fields, possibly empty</td>
-                        <td><code>xs:string*</code></td>
-                     </tr>
-                     <tr>
-                        <td>Body</td>
-                        <td>Array of records, possibly empty</td>
-                        <td><code>array(xs:string*)?</code></td>
-                     </tr>
-                     <tr>
-                        <td>Headers</td>
-                        <td>Map of header to field number</td>
-                        <td><code>map(xs:string,xs:integer)</code></td>
-                     </tr>
-                  </tbody>
-               </table>
+                  <?type csv-row-record ?>
 
-               <p>The <code>headers</code> map uses the field name as the key so it can be used to
-                  allow indexing into record sequences by name rather than index.</p>
+                  <p>The <code>csv-row</code> record represents a single row. The
+                     <code>fields</code> entry is a sequence containing the fields as
+                     <code>xs:string</code>.</p>
 
-               <p>Record length can vary within a CSV file, and the length of the header record is
-                  not a guarantee that later records won't be either shorter or longer. Accessing a
-                  record sequence by position, as in <specref ref="csv-header-access"/>, simply
-                  returns the empty sequence if a record happens to be shorter than expected.</p>
+                  <p>The <code>field</code> entry contains a function, as described below:</p>
+               </div4>
 
-               <note>
-                  <p>There are no built-in facilities to convert XDM structures into a CSV string.</p>
-               </note>
+               <div4 id="csv-xdm-field-function">
+                  <head>The <code>field</code> function</head>
+
+                  <p>The function returned in the <code>field</code> entry is an arity 1 (one)
+                     function which takes either a string or an integer as its argument
+                     <code>$key</code>, and returns a field from the <code>csv-row</code>'s
+                     <code>fields</code> sequence by either column position (when passed an
+                     <code>xs:integer</code>) or column name (when passed an
+                     <code>xs:string</code>).</p>
+
+                  <p>This function is, effectively, a partial application of
+                     <code>fn:csv-fetch-field-by-column</code> where its <code>$columns</code>
+                     argument is bound to the <code>columns</code> entry of the
+                     <code>parsed-csv-structure-record</code>, and its <code>$row</code> argument
+                     is bound to <code>array{csv-row?fields}</code>. This is described in more
+                     detail below:</p>
+
+                  <p>Given a string, <code>$csv-string</code> containing CSV data, implementations
+                     <rfc2119>must</rfc2119> return a function that will return identical results
+                     to <code>fn:csv-fetch-field-by-column</code> called with the same
+                     <code>csv-columns</code> and an <code>array()</code> containing the same
+                     items as the <code>fields</code> sequence:</p>
+
+                  <eg>let $csv-record := fn:csv-to-xdm($csv-string),
+   $csv-columns := $csv-record?columns,
+   $csv-row := head($csv-record?rows)
+   return if (empty($csv-row?field(1)))
+   then empty(fn:csv-fetch-field-by-column($csv-columns, array{$csv-row}, 1))
+   else $csv-row?field(1) = fn:csv-fetch-field-by-column($csv-columns, array{$csv-row}, 1)
+   (: must return true :)
+                  </eg>
+               </div4>
             </div3>
             <div3 id="illustrative-csv-examples">
                <head>Illustrative examples of processing CSV data</head>
@@ -11240,6 +11363,12 @@ ISBN 0 521 77752 6.</bibl>
             function <code>fn:xml-to-json</code>. </p>
             <p>The schema is reproduced below, and can also be found in <loc href="schema-for-json.xsd">schema-for-json.xsd</loc>:</p>
             <?doc schema-for-json.xsd?>
+         </div2>
+         <div2 id="schema-for-csv">
+            <head>Schema for the result of <code>fn:csv-to-xml</code></head>
+            <p>This schema describes the output of the function <code>fn:csv-to-xml</code>.</p>
+            <p>The schema is reproduced below, and can also be found in <loc href="schema-for-json.xsd">schema-for-json.xsd</loc>:</p>
+            <?doc schema-for-csv.xsd?>
          </div2>
       </div1> 
       
