@@ -7203,6 +7203,68 @@ Field 2A,Field 2B,Field 2C"
                   </eg>
                </div4>
             </div3>
+            <div3 id="csv-represent-as-xml">
+               <head>Representing CSV data as XML</head>
+
+               <p>The <code>fn:csv-to-xml</code> function returns XML representing the CSV data.
+                  Following is a CSV text and its XML representation.</p>
+
+               <eg>Name,Date,Amount
+Alice,2023-07-14,1.23
+Bob,2023-07-14,2.34
+               </eg>
+
+               <eg><![CDATA[
+<csv xmlns="http://www.w3.org/2005/xpath-functions">
+   <header>
+      <column>Name</column>
+      <column>Date</column>
+      <column>Amount</column>
+   </header>
+   <rows>
+      <row>
+         <field column="Name">Alice</field>
+         <field column="Date">2023-07-14</field>
+         <field column="Amount">1.23</field>
+      </row>
+      <row>
+         <field column="Name">Bob</field>
+         <field column="Date">2023-07-14</field>
+         <field column="Amount">2.34</field>
+      </row>
+   </rows>
+</csv>
+]]></eg>
+
+               <p>If column names were not extracted, then implementations <rfc2119>should
+                  not</rfc2119> include the <code><![CDATA[<header>]]></code> element, and
+                  <code><![CDATA[<field>]]></code> elements <rfc2119>should not</rfc2119> have
+                  the <code>column</code> attribute:</p>
+
+               <eg><![CDATA[
+<csv xmlns="http://www.w3.org/2005/xpath-functions">
+   <rows>
+      <row>
+         <field>Name</field>
+         <field>Date</field>
+         <field>Amount</field>
+      </row>
+      <row>
+         <field>Alice</field>
+         <field>2023-07-14</field>
+         <field>1.23</field>
+      </row>
+      <row>
+         <field>Bob</field>
+         <field>2023-07-14</field>
+         <field>2.34</field>
+      </row>
+   </rows>
+</csv>
+]]></eg>
+
+               <p>An XSD 1.0 schema for the XML representation is provided in <specref ref="schema-for-csv"/>.</p>
+            </div3>
             <div3 id="illustrative-csv-examples">
                <head>Illustrative examples of processing CSV data</head>
 
