@@ -20492,7 +20492,195 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
 
    <fos:function name="parse-csv" prefix="fn">
       <fos:signatures>
-         <fos:proto name="parse-csv" return-type-ref="parsed-csv-structure-record">
+         <fos:proto name="parse-csv" return-type="array(xs:string)*">
+            <fos:arg name="csv" type="xs:string?"/>
+            <fos:arg name="options" type-ref="parse-csv-options" usage="inspection" default="map{}"/>
+         </fos:proto>
+      </fos:signatures>
+      <fos:properties>
+         <fos:property>deterministic</fos:property>
+         <fos:property>context-independent</fos:property>
+         <fos:property>focus-independent</fos:property>
+      </fos:properties>
+      <fos:summary>
+         <p>Parses CSV data supplied as a string, returning the results in the form of a sequence of arrays of strings.</p>
+      </fos:summary>
+      <fos:rules>
+         <p>The effect of the one-argument form of this function is the same as calling the
+            two-argument form with an empty map as the value of the <code>$options</code>
+            argument.</p>
+         
+         <p>The first argument is CSV data, as defined in <bibref ref="rfc4180"/>, in the form of a
+            sequence of <code>xs:string</code> values. The function parses this sequence to return
+            an XDM value.</p>
+         
+         <p>If <code>$csv</code> is the empty sequence, implementations <rfc2119>must</rfc2119>
+            return the empty sequence as the value of the <code>body</code> field of the returned
+            map.</p>
+         
+         <p>The <code>$options</code> argument can be used to control the way in which the parsing
+            takes place. The <termref
+               def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
+         
+         <p>Implementations <rfc2119>must</rfc2119> treat any of CRLF, CR, or LF as a single line separator, as with <code>fn:unparsed-text-lines</code>.</p>
+         
+         <p>Fields are regarded as simple <code>xs:string</code> values. Implementations
+            <rfc2119>must</rfc2119> leave whitespace within a field untouched, without
+            normalizing or otherwise altering it, unless whitespace trimming is explicitly requested
+            by the user using the <code>trim-whitespace</code> option.</p>
+         
+         <p>When whitespace trimming is requested, implementations <rfc2119>must</rfc2119> only
+            strip leading and trailing whitespace, this is not equivalent to calling
+            <code>fn:normalize-space()</code>.</p>
+         
+         <p>The entries that may appear in the <code>$options</code> map are as follows:</p>
+         
+         <fos:options>
+            <fos:option key="field-delimiter">
+               <fos:meaning>The character used to delimit fields within a record. An instance of
+                  <code>xs:string</code> whose length is exactly one.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>","</fos:default>
+            </fos:option>
+            <fos:option key="record-delimiter">
+               <fos:meaning>The characters used to delimit records within the CSV string, if the
+                  default use of line separator as record separator is to be overridden.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>()</fos:default>
+            </fos:option>
+            <fos:option key="quote-character">
+               <fos:meaning>The character used to quote fields within the CSV string. An instance of
+                  <code>xs:string</code> whose length is exactly one.</fos:meaning>
+               <fos:type>xs:string</fos:type>
+               <fos:default>'"'</fos:default>
+            </fos:option>
+            <fos:option key="trim-whitespace">
+               <fos:meaning>Determines whether fields should have leading and trailing whitespace
+                  removed before being returned.</fos:meaning>
+               <fos:type>xs:boolean</fos:type>
+               <fos:default>false</fos:default>
+               <fos:values>
+                  <fos:value value="false">Fields will be returned with any leading or trailing
+                     whitespace intact. Implementations <rfc2119>must</rfc2119> preserve whitespace
+                     as it occurred in the CSV string.
+                  </fos:value>
+                  <fos:value value="true">Fields will be returned with leading or trailing
+                     whitespace removed, and all non-leading or -trailing whitespace preserved.
+                  </fos:value>
+               </fos:values>
+            </fos:option>
+         </fos:options>
+         
+         <p>The result of the function is a sequence of arrays-of-strings
+            <code>array(xs:string)*</code>.</p>
+         <p>A blank row is represented as an empty array.</p>
+         <p>An empty field is represented by the empty string.</p>
+      </fos:rules>
+      <fos:errors>
+         <p>A dynamic error <errorref class="CV" code="0001"/> occurs if the value of
+            <code>$csv</code> does not conform to the <bibref ref="rfc4180"/> grammar for quoted
+            fields.</p>
+         <p>A dynamic error <errorref class="CV" code="0002"/> occurs if one or more of the values
+            for <code>field-separator</code>, <code>record-separator</code>,
+            <code>quote-character</code> are specified and are not a single character.</p>
+         <p>A dynamic error <errorref class="CV" code="0003"/> occurs if any of the values for
+            <code>field-separator</code>, <code>record-separator</code>,
+            <code>quote-character</code> are equal.</p>
+      </fos:errors>
+      <fos:notes>
+         <p>All fields are returned as <code>xs:string</code> values.</p>
+         <p>Quoted fields in the input are returned without the quotes.</p>
+         <p>For more discussion of the returned data, see <specref ref="csv"/>.</p>
+      </fos:notes>
+      <fos:examples>
+         <fos:variable name="lf" id="escaped-lf"><![CDATA[char('x0A')]]></fos:variable>
+         <fos:variable name="cr" id="escaped-cr"><![CDATA[char('x0D')]]></fos:variable>
+         <fos:variable name="crlf" id="escaped-crlf"><![CDATA[char('x0D')||char('x0A')]]></fos:variable>
+         <fos:example>
+            <p>Handling any of the default record separators:</p>
+            <fos:test use="escaped-crlf">
+               <fos:expression>parse-csv(`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`)</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+            <fos:test use="escaped-cr">
+               <fos:expression>parse-csv(`name,city{$cr}Bob,Berlin{$cr}Alice,Aachen{$cr}`)</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+            <fos:test use="escaped-lf">
+               <fos:expression>parse-csv(`name,city{$lf}Bob,Berlin{$lf}Alice,Aachen{$lf}`)</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>Quote handling:</p>
+            <fos:test use="escaped-crlf">
+               <fos:expression>parse-csv(`"name","city"${crlf}"Bob","Berlin"${crlf}"Alice","Aachen"${crlf}`)</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+            <fos:test use="escaped-crlf">
+               <fos:expression>parse-csv(`"name","city"${crlf}"Bob ""The Exemplar"" Mustermann","Berlin"${crlf}`)</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ['Bob "The Exemplar" Mustermann', "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+               
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>Non-default record- and field-separators:</p>
+            <fos:test>
+               <fos:expression>parse-csv("name;city§Bob;Berlin§Alice;Aachen", map{"record-separator": "§", "field-separator": ";"})</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>Non-default quote character:</p>
+            <fos:test use="escaped-crlf">
+               <fos:expression>parse-csv(`|name|,|city|${crlf}|Bob|,|Berlin|${crlf}`, map{"quote-character": "|"})</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>Trimming whitespace in fields:</p>
+            <fos:test use="escaped-crlf">
+               <fos:expression xml:space="preserve">parse-csv(`name  ,city  ${crlf}Bob   ,Berlin${crlf}Alice ,Aachen${crlf}`, map{"trim-whitespace: true()})</fos:expression>
+               <fos:result>(
+   ["name", "city"]
+   ["Bob", "Berlin"],
+   ["Alice", "Aachen"]
+)</fos:result>
+            </fos:test>
+         </fos:example>
+      </fos:examples>
+   </fos:function>
+   <fos:function name="csv-to-xdm" prefix="fn">
+      <fos:signatures>
+         <fos:proto name="csv-to-xdm" return-type-ref="parsed-csv-structure-record">
             <fos:arg name="csv" type="xs:string?"/>
             <fos:arg name="options" type="map(*)" usage="inspection" default="map{}"/>
          </fos:proto>
@@ -20503,50 +20691,52 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:property>focus-independent</fos:property>
       </fos:properties>
       <fos:summary>
-         <p>Parses CSV data supplied as a string, returning the results in the form of a map
-            typically containing information about headers and the data itself as an array of
-            sequences.</p>
+         <p>Parses CSV data supplied as a string, returning the results in the form of a
+            <code>parsed-csv-structure-record</code> record containing information about the
+            column structure of the data, as well as the data itself as a sequence of
+            <code>csv-row-record</code> records.</p>
       </fos:summary>
       <fos:rules>
          <p>The effect of the one-argument form of this function is the same as calling the
             two-argument form with an empty map as the value of the <code>$options</code>
             argument.</p>
 
-         <p>The first argument is CSV data, as defined in <bibref ref="rfc4180"
-            />, in the form of a string. The function
-            parses this string to return an XDM value.</p>
+         <p>The first argument is CSV data, as defined in <bibref ref="rfc4180"/>, in the form of a
+            sequence of <code>xs:string</code> values. The function parses this sequence using
+            <code>fn:parse-csv</code>, and then processes its result to return an XDM value.</p>
 
          <p>If <code>$csv</code> is the empty sequence, implementations <rfc2119>must</rfc2119>
-            return the empty sequence as the value of the <code>body</code> field of the returned
-            map.</p>
+            return a <code>parsed-csv-structure-record</code> whose <code>rows</code> entry is the empty sequence.</p>
+
+         <p>If <code>$csv</code> is the empty sequence, but column name extraction has been
+            requested, or explicit column names have been supplied, then the
+            <code>parsed-csv-structure-record</code> returned by implementations
+            <rfc2119>must</rfc2119> have a <code>rows</code> entry whose value is the empty
+            sequence.</p>
 
          <p>The <code>$options</code> argument can be used to control the way in which the parsing
             takes place. The <termref
                def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
 
-         <p>Implementations <rfc2119>must</rfc2119> treat any of CRLF, CR, or LF as a record separator, as with <code>fn:unparsed-text-lines</code>.</p>
-
-         <p>Fields are regarded as simple <code>xs:string</code> values. Implementations
-            <rfc2119>must</rfc2119> leave whitespace within a field untouched, without
-            normalizing or otherwise altering it, unless whitespace trimming is explicitly requested
-            by the user using the <code>trim-whitespace</code> option.</p>
+         <p>Handling of delimiters, and whitespace trimming, are handled using
+            <code>fn:parse-csv</code>, and the options controlling their use are defined
+            there.</p>
 
          <p>If the <code>headers</code> option is true, implementations <rfc2119>must</rfc2119>
             exclude the first record from the returned map’s <code>body</code> key, and return it as
             the value of the returned map’s <code>headers-record</code> key.</p>
 
          <p>The entries that may appear in the <code>$options</code> map are as follows:</p>
-
          <fos:options>
-            <fos:option key="field-separator">
-               <fos:meaning>The character used to separate fields within a record. An instance of
+            <fos:option key="field-delimiter">
+               <fos:meaning>The character used to delimit fields within a record. An instance of
                   <code>xs:string</code> whose length is exactly one.</fos:meaning>
                <fos:type>xs:string</fos:type>
                <fos:default>","</fos:default>
             </fos:option>
-            <fos:option key="record-separator">
-               <fos:meaning>The characters used to separate records within the CSV string, if the
-                  default CRLF, CR, or LF matching is not wanted.</fos:meaning>
+            <fos:option key="record-delimiter">
+               <fos:meaning>The characters used to delimit records within the CSV string, if the
+                  default use of line separator as record separator is to be overridden.</fos:meaning>
                <fos:type>xs:string</fos:type>
                <fos:default>()</fos:default>
             </fos:option>
@@ -20556,66 +20746,86 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:type>xs:string</fos:type>
                <fos:default>'"'</fos:default>
             </fos:option>
-            <fos:option key="headers">
-               <fos:meaning>Determines whether the first record from the CSV should be treated as a
-                  list of column headers and returned as a name: field-number map in the
-                     <code>headers</code> entry of the returned map. Additionally, the first record
-                  will be returned in the <code>headers-record</code> entry of the returned
-                  map.</fos:meaning>
-               <fos:type>xs:boolean</fos:type>
-               <fos:default>true</fos:default>
-               <fos:values>
-                  <fos:value value="true"> The first record is read and turned into a map of the
-                     form <code>{ "Field-header": Field-number }</code>, in the returned map’s
-                     <code>headers</code> entry. Implmentations <rfc2119>must</rfc2119> exclude
-                     the first record from the returned map’s <code>body</code> entry, and return it
-                     as the returned map’s <code>headers-record</code> entry.
-                  </fos:value>
-                  <fos:value value="false"> Implementations <rfc2119>must not</rfc2119> include
-                     <code>headers</code> or <code>headers-record</code> entries in the returned
-                     map, and the first record <rfc2119>must</rfc2119> be included at the beginning
-                     of <code>body</code> entry’s array.
-                  </fos:value>
-               </fos:values>
-            </fos:option>
             <fos:option key="trim-whitespace">
                <fos:meaning>Determines whether fields should have leading and trailing whitespace
                   removed before being returned.</fos:meaning>
                <fos:type>xs:boolean</fos:type>
                <fos:default>false</fos:default>
                <fos:values>
-                  <fos:value value="false"> Fields will be returned with any leading or trailing
+                  <fos:value value="false">Fields will be returned with any leading or trailing
                      whitespace intact. Implementations <rfc2119>must</rfc2119> preserve whitespace
                      as it occurred in the CSV string.
                   </fos:value>
-                  <fos:value value="true"> Fields will be returned with leading or trailing
-                     whitespace removed. Implementations <rfc2119>must</rfc2119> only strip leading
-                     and trailing whitespace, this is not equivalent to calling
-                     <code>fn:normalize-space()</code>.
+                  <fos:value value="true">Fields will be returned with leading or trailing
+                     whitespace removed, and all non-leading or -trailing whitespace preserved.
+                  </fos:value>
+               </fos:values>
+            </fos:option>
+            <fos:option key="column-names">
+               <fos:meaning>Determines whether the first row of the CSV should be treated as a list
+                  of column headers and returned as a <code>csv-columns-record</code> in the
+                  <code>header</code> entry of the returned map.</fos:meaning>
+               <fos:type>union(xs:boolean, map(xs:integer, xs:string))</fos:type>
+               <fos:default>false</fos:default>
+               <fos:values>
+                  <fos:value value="true">A <code>csv-columns-record</code> is constructed using the
+                     first row of the CSV data and returned as the <code>header</code> entry of the
+                     <code>parsed-csv-structure-record</code>. The row's fields are transformed
+                     into a map of the form <code>{ column-number: "Column name" }</code> for the
+                     <code>columns</code> entry of the <code>csv-columns-record</code>, and the
+                     fields of the row are returned as a sequence of strings
+                     (<code>xs:string*</code>) for the <code>fields</code> entry. Implmentations
+                     <rfc2119>must</rfc2119> exclude the first row from the <code>rows</code>
+                     entry of the returned <code>parsed-csv-structure-record</code>.</fos:value>
+                  <fos:value value="false">Implementations <rfc2119>must</rfc2119> return an empty
+                     <code>csv-columns-record</code>, equivalent to the literal map <code>map {
+                     columns: map {}, fields: () }</code>, in the <code>header</code> entry of
+                     the returned <code>parsed-csv-structure-record</code>. Implementations
+                     <rfc2119>must not</rfc2119> exclude the first row from the <code>rows</code>
+                     entry of the <code>parsed-csv-structure-record</code>.</fos:value>
+                  <fos:value value="map(xs:integer, xs:string)">A <code>csv-columns-record</code> is
+                     constructed using the supplied map and returned as the <code>header</code>
+                     entry of the <code>parsed-csv-structure-record</code>. The supplied map is used
+                     as the <code>columns</code> entry, and a sequence of strings for the
+                     <code>fields</code> is constructed, filling in blank columns with the empty
+                     string. and the fields of the row are returned as the <code>fields</code>
+                     entry. Implementations <rfc2119>must not</rfc2119> exclude the first row from
+                     the <code>rows</code> entry of the <code>parsed-csv-structure-record</code>.
                   </fos:value>
                </fos:values>
             </fos:option>
          </fos:options>
 
+         <p>If column names were extracted from the first row of the CSV, when there are duplicate
+            column names, implementations <rfc2119>must</rfc2119> include only the first occurrence
+            in the <code>columns</code> entry of the <code>csv-columns-record</code>, ignoring
+            subsequent entries. Any fields in the first record whose value is the empty string
+            <rfc2119>must</rfc2119> also be omitted.</p>
+
          <p>The result of the function is a <code>parsed-csv-structure-record</code>, a map with
-            string keys containing at least two entries, <code>body</code>, and <code>field</code>,
-            with another two optional entries, <code>headers</code> and
-            <code>headers-record</code>.</p>
+            string keys containing two entries, <code>header</code>, and <code>rows</code>.</p>
          <olist>
             <item>
-               <p>The entry with key <code>"body"</code> holds the records of the CSV as an array of
-                  sequences of strings, <code>array(xs:string*)</code>. If there is no data in the
-                  CSV, this will be empty.</p>
+               <p>The entry with key <code>"header"</code> holds a <code>csv-columns-record</code>
+                  record. If column names have been extracted, or supplied, then the record will
+                  have a <code>columns</code> entry whose value is a map of column-number to
+                  column-name, <code>map(xs:integer, xs:string)</code>. The record's
+                     <code>fields</code> entry will contains the column names as a sequence of strings,
+                     <code>xs:string*</code>, replicating the row they were taken from.</p>
             </item>
             <item>
-               <p>The entry with key <code>"field"</code> is an arity-two function <var>F</var> that
-                  takes a CSV record <var>R</var> (of type <code>xs:string*</code>) and a string or
-                  integer key <var>K</var> as input, and returns the field in <var>R</var> that
+               <p>The entry with key <code>"rows"</code> holds the records of the CSV as a sequence
+                  of row records, <code>csv-row-record*</code>. If there is no data in the CSV, this
+                  will be the empty sequence.</p>
+
+               <p>Each record in the <code>rows</code> sequence contains a <code>fields</code>
+                  entry, containing the rows fields as a sequence of strings,
+                  <code>xs:string*</code>, and a <code>field</code> entry containing an arity-one
+                  function. The function takes a string or
+                  integer key <var>K</var> as input, and returns the field in <var>fields</var> that
                   corresponds to the position <var>K</var>, if <var>K</var> is an
                   <code>xs:integer</code>, or the position obtained by looking up <var>K</var> in
-                  the <code>headers</code> map if <var>K</var> is an <code>xs:string</code>.</p>
-
-               <p>TODO: What is the best way to specify dynamic errors that this function might throw?</p>
+                  the <code>names</code> map if <var>K</var> is an <code>xs:string</code>.</p>
 
                <p>The properties of this function are as follows:</p>
                <ulist>
@@ -20623,10 +20833,10 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                      <p>name: absent</p>
                   </item>
                   <item>
-                     <p>parameter names: (<var>$record</var>, <var>$key</var>)</p>
+                     <p>parameter names: (<var>$key</var>)</p>
                   </item>
                   <item>
-                     <p>signature: <code>(xs:string*, item()) => xs:string</code></p>
+                     <p>signature: <code>(union(xs:integer, xs:string)) => xs:string?</code></p>
                   </item>
                   <item>
                      <p>non-local variable bindings: none</p>
@@ -20635,22 +20845,16 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                      <p>implementation: implementation-dependent</p>
                   </item>
                   <item>
-                     <p>errors: A dynamic error <errorref class="CV" code="0004"/> occurs if the supplied <var>$key</var> is a string and does not occur in the map of headers.</p>
+                     <p>errors: A dynamic error <errorref class="CV" code="0004"/> occurs if the supplied <var>$key</var> is a string and does not occur in the map of column names.</p>
                   </item>
                </ulist>
-            </item>
-            <item>
-               <p>If present, the entry with key <code>"headers"</code> holds the field headers
-                  (from the first record of the CSV) as a map of field name to position,
-                  <code>map(xs:string, xs:integer)</code>. If there are duplicate field headers,
-                  implementations <rfc2119>must</rfc2119> include only the first occurrence in the
-                  <code>headers</code> entry, ignoring subsequent entries. Any fields in the
-                  first record whose value is the empty string <rfc2119>must</rfc2119> also be
-                  omitted.</p>
-            </item>
-            <item>
-               <p>If present, the entry with key <code>"headers-record"</code> holds the first
-                  record of the CSV, a sequence of strings (<code>xs:string*</code>), unaltered.</p>
+
+               <p>This function behaves identically to <code>fn:csv-fetch-field-by-column</code>
+                  would had the <code>header</code> entry of the containing
+                  <code>parsed-csv-structure-record</code> and the <code>fields</code> entry of
+                  this <code>csv-row-record</code> been bound to it through partial function
+                  application. See the definition of <code>fn:csv-fetch-field-by-column</code> for
+                  more details</p>
             </item>
          </olist>
       </fos:rules>
@@ -20671,120 +20875,88 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <p>For more discussion of the returned data, see <specref ref="csv"/>.</p>
       </fos:notes>
       <fos:examples>
-         <fos:variable name="lf" id="escaped-lf"><![CDATA[char('x0A')]]></fos:variable>
-         <fos:variable name="cr" id="escaped-cr"><![CDATA[char('x0D')]]></fos:variable>
-         <fos:variable name="crlf" id="escaped-crlf"><![CDATA[char('x0D')||char('x0A')]]></fos:variable>
+         <fos:variable name="crlf" id="escaped-crlf-2"><![CDATA[char('x0D')||char('x0A')]]></fos:variable>
+         <fos:variable name="options" id="non-default-delims">map { "record-separator": "§", "field-separator": ";", "quote-character": "|" }</fos:variable>
+         <fos:variable name="trim-opts" id="trim-whitespace-options">map { "trim-whitespace": true() }</fos:variable>
+         <fos:variable name="csv-string" id="csv-string">`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`</fos:variable>
+         <fos:variable name="non-std-csv" id="non-standard-csv-string">`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`</fos:variable>
          <fos:example>
-            <p>TODO: How should the returned function be written in the <code>&lt;fos:result&gt;</code> elements in this example section?</p>
-            <p>Handling any of the default record separators:</p>
-            <fos:test use="escaped-crlf">
-               <fos:expression>parse-csv(`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`)</fos:expression>
+            <p>With defaults for delimiters and quotes, and default column extraction (false):</p>
+            <fos:test use="csv-string">
+               <fos:expression>map:keys(csv-to-xdm($csv-string))</fos:expression>
+               <fos:result>("header", "rows")</fos:result>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string)?header</fos:expression>
                <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
+  "columns": map {},
+  "fields": (),
 }</fos:result>
             </fos:test>
-            <fos:test use="escaped-cr">
-               <fos:expression>parse-csv(`name,city{$cr}Bob,Berlin{$cr}Alice,Aachen{$cr}`)</fos:expression>
+            <fos:test use="csv-string">
+               <fos:expression>count(csv-to-xdm($csv-string)?rows)</fos:expression>
+               <fos:result>3</fos:result>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string)?rows[1]?field("name")</fos:expression>
+               <fos:error-result error-code="CV"/>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string)?rows[1]?field(2)</fos:expression>
+               <fos:result>"city"</fos:result>
+            </fos:test>
+            <p>With defaults for delimiters and quotes, and <code>columns: true()</code> set:</p>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string, map {"columns": true()})?header</fos:expression>
                <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
+  "columns": map { "name": 1, "city": 2 },
+  "fields": ("name", "city"),
 }</fos:result>
             </fos:test>
-            <fos:test use="escaped-lf">
-               <fos:expression>parse-csv(`name,city{$lf}Bob,Berlin{$lf}Alice,Aachen{$lf}`)</fos:expression>
-               <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
+            <fos:test use="csv-string">
+               <fos:expression>count(csv-to-xdm($csv-string, map {"columns": true()})?rows)</fos:expression>
+               <fos:result>2</fos:result>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string), map {"columns": true()}?rows[1]?fields</fos:expression>
+               <fos:result>("Bob", "Berlin")</fos:result>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string, map {"columns": true()})?rows[1]?field("name")</fos:expression>
+               <fos:result>"Bob"</fos:result>
+            </fos:test>
+            <fos:test use="csv-string">
+               <fos:expression>csv-to-xdm($csv-string, map {"columns": true()})?rows[1]?field(2)</fos:expression>
+               <fos:result>"Berlin"</fos:result>
             </fos:test>
          </fos:example>
          <fos:example>
-            <p>Quote handling:</p>
-            <fos:test use="escaped-crlf">
-               <fos:expression>parse-csv(`"name","city"${crlf}"Bob","Berlin"${crlf}"Alice","Aachen"${crlf}`)</fos:expression>
-               <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
+            <p>Non-default record- and field-delimiters, non-default quotes:</p>
+            <fos:test use="non-default-delims non-standard-csv-string">
+               <fos:expression>map:keys(csv-to-xdm($non-std-csv, $options))</fos:expression>
+               <fos:result>("header", "rows")</fos:result>
             </fos:test>
-            <fos:test use="escaped-crlf">
-               <fos:expression>parse-csv(`"name","city"${crlf}"Bob ""The Exemplar"" Mustermann","Berlin"${crlf}`)</fos:expression>
+            <fos:test use="non-default-delims">
+               <fos:expression>csv-to-xdm($non-std-csv, $options)?header</fos:expression>
                <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ('Bob "The Exemplar" Mustermann', "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
+                  "columns": map {},
+                  "fields": (),
+                  }</fos:result>
             </fos:test>
-         </fos:example>
-         <fos:example>
-            <p>Non-default record- and field-separators:</p>
-            <fos:test>
-               <fos:expression>parse-csv("name;city§Bob;Berlin§Alice;Aachen", map{"record-separator": "§", "field-separator": ";"})</fos:expression>
-               <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
+            <fos:test use="non-default-delims">
+               <fos:expression>count(csv-to-xdm($non-std-csv, $options)?rows)</fos:expression>
+               <fos:result>3</fos:result>
             </fos:test>
-         </fos:example>
-         <fos:example>
-            <p>Non-default quote character:</p>
-            <fos:test use="escaped-crlf">
-               <fos:expression>parse-csv(`|name|,|city|${crlf}|Bob|,|Berlin|${crlf}`, map{"quote-character": "|"})</fos:expression>
-               <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [("Bob", "Berlin")]
-}</fos:result>
+            <fos:test use="non-default-delims">
+               <fos:expression>csv-to-xdm($non-std-csv, $options)?rows[3]?field(1)</fos:expression>
+               <fos:result>"Alice"</fos:result>
             </fos:test>
          </fos:example>
          <fos:example>
             <p>Trimming whitespace in fields:</p>
-            <fos:test use="escaped-crlf">
-               <fos:expression xml:space="preserve">parse-csv(`name  ,city  ${crlf}Bob   ,Berlin${crlf}Alice ,Aachen${crlf}`, map{"trim-whitespace: true()})</fos:expression>
-               <fos:result>map {
-  "headers": map { "name":1, "city":2 },
-  "headers-record": ("name", "city"),
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
-            </fos:test>
-         </fos:example>
-         <fos:example>
-            <p>Not parsing out a headers record:</p>
-            <fos:test use="escaped-crlf">
-               <fos:expression>parse-csv(`Bob,Berlin${crlf}Alice,Aachen${crlf}`, map{headers: false()})</fos:expression>
-               <fos:result>map {
-  "body": [
-    ("Bob", "Berlin"),
-    ("Alice", "Aachen")
-  ]
-}</fos:result>
+            <fos:test use="escaped-crlf-2 trim-whitespace-options">
+               <fos:expression xml:space="preserve">csv-to-xdm(`name  ,city  ${crlf}Bob   ,Berlin${crlf}Alice ,Aachen${crlf}`, $trim-opts)?rows?fields</fos:expression>
+               <fos:result>("name", "city", "Bob", "Berlin", "Alice", "Aachen")</fos:result>
             </fos:test>
          </fos:example>
       </fos:examples>
@@ -20792,9 +20964,8 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
 
    <fos:function name="csv-to-xml" prefix="fn">
       <fos:signatures>
-         <fos:proto name="csv-to-xml" return-type="item()*">
-            <fos:arg name="csv" type-ref="parsed-csv-structure-record"/>
-            <fos:arg name="record-func" type="function(xs:string*) as item()*"/>
+         <fos:proto name="csv-to-xml" return-type="element(fn:csv)">
+            <fos:arg name="csv" type="xs:string?"/>
             <fos:arg name="options" type="map(*)" usage="inspection" default="map{}"/>
          </fos:proto>
       </fos:signatures>
@@ -20804,26 +20975,40 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:property>focus-independent</fos:property>
       </fos:properties>
       <fos:summary>
-         <p>Iterates over the body records from a <code>parsed-csv-structure-record</code>, calling the supplied <code>$record-func</code> function argument with each in turn.</p>
+         <p>Parses CSV data supplied as a string, returning the results as an XML document, as described by 
+            <specref ref="csv-represent-as-xml"/>.</p>
       </fos:summary>
       <fos:rules>
-         <p>The effect of the two-argument form of this function is the same as calling the
-            three-argument form with an empty map as the value of the <code>$options</code>
+         <p>The effect of the one-argument form of this function is the same as calling the
+            two-argument form with an empty map as the value of the <code>$options</code>
             argument.</p>
 
-         <p>The first argument is a parsed CSV data structure,
-               <code>parsed-csv-structure-record</code>, as defined in <!--<specref ref="csv-structures"
-            />-->.</p>
+         <p>The first argument is CSV data, as defined in <bibref ref="rfc4180"/>, in the form of a
+            sequence of <code>xs:string</code> values. The function parses this sequence using
+            <code>fn:parse-csv</code>, and then processes its result to return an XML document.</p>
 
-         <p>The second argument is a function that takes a sequence of <code>xs:string</code> values
-            as its only argument, returning a sequence of <code>item()</code>s.</p>
+         <p>If <code>$csv</code> is the empty sequence, implementations <rfc2119>must</rfc2119>
+            return a <code><![CDATA[<fn:csv>]]></code> whose <code><![CDATA[<fn:rows>]]></code> element
+            is empty.</p>
 
-         <p>If <code>$csv</code> is the empty sequence, the function returns the empty sequence.</p>
-
-         <p>The <code>$options</code> argument can be used to control the way records passed to the
-               <code>record-func</code> are structured. The <termref
+         <p>If <code>$csv</code> is the empty sequence, but column name extraction has been
+            requested, but explicit column names have not been supplied, then the implementation
+            <rfc2119>must</rfc2119> return a <code><![CDATA[<fn:csv>]]></code> element whose
+            <code><![CDATA[<fn:header>]]></code> element is empty.</p>
+         
+         <p>If <code>$csv</code> is the empty sequence, but explicit column names have been
+            supplied, then the implementation <rfc2119>must</rfc2119> return a
+            <code><![CDATA[<fn:csv>]]></code> element whose <code><![CDATA[<fn:header>]]></code>
+            element contains the appropriate <code><![CDATA[<fn:header>]]></code> elements.</p>
+         
+         <p>The <code>$options</code> argument can be used to control the way in which the parsing
+            takes place. The <termref
                def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
-
+         
+         <p>Handling of delimiters, and whitespace trimming, are handled using
+            <code>fn:parse-csv</code>, and the options controlling their use are defined
+            there.</p>
+         
          <p>The entries that may appear in the <code>$options</code> map are as follows:</p>
 
          <fos:options>
@@ -20839,104 +21024,112 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          </fos:options>
       </fos:rules>
       <fos:errors>
-         <p>A dynamic error <errorref class="CV" code="0005"/> occurs if <code>$csv</code> does not match type <code>parsed-csv-structure-record</code>.</p>
+         <p>A dynamic error <errorref class="CV" code="0001"/> occurs if the value of
+            <code>$csv</code> does not conform to the <bibref ref="rfc4180"/> grammar for quoted
+            fields.</p>
+         <p>A dynamic error <errorref class="CV" code="0002"/> occurs if one or more of the values
+            for <code>field-separator</code>, <code>record-separator</code>,
+            <code>quote-character</code> are specified and are not a single character.</p>
+         <p>A dynamic error <errorref class="CV" code="0003"/> occurs if any of the values for
+            <code>field-separator</code>, <code>record-separator</code>,
+            <code>quote-character</code> are equal.</p>
       </fos:errors>
       <fos:examples>
-         <fos:variable name="csv" id="parsed-csv-1"><![CDATA[
-map {
-   "headers": map { "Name": 1, "City": 2 },
-   "headers-record": ("Name", "City"),
-   "body": [
-      ("Alice, "Aachen"),
-      ("Bob", "Berlin")
-   ]
-}]]>
-         </fos:variable>
-         <fos:variable name="record-func" id="simple-record-func"><![CDATA[
-function($record as xs:string*) as item() {
-   return <tr>{
-      for $field in $record return <td>{ $field }</td>
-   }</tr>
-}]]>
-         </fos:variable>
+         <fos:variable name="crlf" id="escaped-crlf-3"><![CDATA[char('x0D')||char('x0A')]]></fos:variable>
+         <fos:variable name="csv-string" id="csv-string-2">`name,city{$crlf}Bob,Berlin{$crlf}Alice,Aachen{$crlf}`</fos:variable>
          <fos:example>
-            <fos:test use="parsed-csv-1 simple-record-func">
-               <fos:expression><![CDATA[
-csv-to-xml($csv, $record-func)]]>
-               </fos:expression>
-               <fos:result normalize-space="true"><![CDATA[
-<tr>
-   <td>Alice</td>
-   <td>Aachen</td>
-</tr>
-<tr>
-   <td>Bob</td>
-   <td>Berlin</td>
-</tr>]]>
-               </fos:result>
+            <p>An empty CSV with default column extraction (false):</p>
+            <fos:test use="csv-string-2">
+               <fos:expression>csv-to-xml("")</fos:expression>
+               <fos:result><![CDATA[
+<fn:csv>
+   <fn:rows/>
+</fn:csv>
+]]></fos:result>
             </fos:test>
          </fos:example>
          <fos:example>
-            <fos:test use="parsed-csv-1 simple-record-func">
-               <fos:expression><![CDATA[
-csv-to-xml($csv, $record-func, map { "field-order": (2, 1) })]]>
-               </fos:expression>
-               <fos:result normalize-space="true"><![CDATA[
-<tr>
-   <td>Aachen</td>
-   <td>Alice</td>
-</tr>
-<tr>
-   <td>Berlin</td>
-   <td>Bob</td>
-</tr>]]>
-               </fos:result>
+            <p>An empty CSV with column extraction:</p>
+            <fos:test use="csv-string-2">
+               <fos:expression>csv-to-xml("", map { "columns": true() })</fos:expression>
+               <fos:result><![CDATA[
+<fn:csv>
+   <fn:header/>
+   <fn:rows/>
+</fn:csv>
+]]></fos:result>
             </fos:test>
          </fos:example>
          <fos:example>
-            <p>A more realistic example, showing filtering and reordering from many fields in a record down to a handful:</p>
-         </fos:example>
-         <fos:variable name="csv" id="parsed-csv-2"><![CDATA[
-map {
-   "headers": map {
-      "Account": 1, "Invoice Date": 2, "Transaction Date": 3, "Original Amount": 4,
-      "Original Currency": 5, "Exchange rate": 6, "Transaction Amount": 7,
-      "Currency": 8, "Transaction Description": 9,
-      "Additional Transaction Description": 10, "Transaction Reference": 11,
-      "Charge code": 12, "Country Code": 13
-   },
-   "headers-record: ("Account", "Invoice Date", "Transaction Date", "Original Amount",
-      "Original Currency", "Exchange rate", "Transaction Amount", "Currency",
-      "Transaction Description", "Additional Transaction Description",
-      "Transaction Reference", "Charge code", "Country Code"),
-   "body": [
-      ("1234 **** **** 1234", "25.12.22", "27.12.22", "-8.70", "EUR", "1.00",
-         "-8.70", "EUR", "Ashop", "Amsterdam", "0", "", ""),
-      ("1234 **** **** 1234", "16.12.22", "19.12.22", "-20.00", "USD", "1.06",
-         "-18.88", "EUR", "Bshop", "San Francisco", "1", "", "")
-   ]
-}
-         ]]></fos:variable>
-         <fos:example>
-            <fos:test use="parsed-csv-1 simple-record-func">
-               <fos:expression><![CDATA[
-csv-to-xml($csv, $record-func, map { "field-order": ("Invoice Date", "Transaction Description", "Transaction Amount") })]]>
-               </fos:expression>
-               <fos:result normalize-space="true"><![CDATA[
-<tr>
-   <td>25.12.22</td>
-   <td>Ashop</td>
-   <td>-8.70</td>
-</tr>
-<tr>
-   <td>25.12.22</td>
-   <td>Bshop</td>
-   <td>-18.88</td>
-</tr>
-]]>
-               </fos:result>
+            <p>An empty CSV with explicit column names:</p>
+            <fos:test use="csv-string-2">
+               <fos:expression>csv-to-xml("", map { "columns": map { "name": 1, "city": 3 })</fos:expression>
+               <fos:result><![CDATA[
+<fn:csv>
+   <fn:header>
+      <fn:column>name</fn:field>
+      <fn:column/>
+      <fn:column>city</fn:field>
+   </fn:header>
+   <fn:rows/>
+</fn:csv>
+]]></fos:result>
             </fos:test>
          </fos:example>
+         <fos:example>
+            <p>With defaults for delimiters and quotes, and column extraction:</p>
+            <fos:test use="csv-string-2">
+               <fos:expression>csv-to-xml($csv-string, map { "columns": true() })</fos:expression>
+               <fos:result><![CDATA[
+<fn:csv>
+   <fn:header>
+      <fn:column>name</fn:field>
+      <fn:column>city</fn:field>
+   </fn:header>
+   <fn:rows>
+      <fn:row>
+         <fn:field column="name">Bob</fn:field>
+         <fn:field column="city">Berlin</fn:field>
+      </fn:row>
+      <fn:row>
+         <fn:field column="name">Alice</fn:field>
+         <fn:field column="city">Aachen</fn:field>
+      </fn:row>
+   </fn:rows>
+</fn:csv>
+]]></fos:result>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>With defaults for delimiters and quotes, and column extraction:</p>
+            <fos:test use="csv-string-2">
+               <fos:expression>csv-to-xml($csv-string, map { "columns": true() })</fos:expression>
+               <fos:result><![CDATA[
+<fn:csv>
+   <fn:header>
+      <fn:field>name</fn:field>
+      <fn:field>city</fn:field>
+   </fn:header>
+   <fn:rows>
+      <fn:row>
+         <fn:field column="name">Bob</fn:field>
+         <fn:field column="city">Berlin</fn:field>
+      </fn:row>
+      <fn:row>
+         <fn:field column="name">Alice</fn:field>
+         <fn:field column="city">Aachen</fn:field>
+      </fn:row>
+   </fn:rows>
+</fn:csv>
+]]></fos:result>
+            </fos:test>
+         </fos:example>                     
+         
+         
+         
+         
+         
+         
       </fos:examples>
    </fos:function>
 

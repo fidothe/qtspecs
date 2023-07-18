@@ -5777,6 +5777,9 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <div3 id="func-parse-csv">
                <head><?function fn:parse-csv?></head>
             </div3>
+            <div3 id="func-csv-to-xdm">
+               <head><?function fn:csv-to-xdm?></head>
+            </div3>
             <div3 id="func-csv-to-xml">
                <head><?function fn:csv-to-xml?></head>
             </div3>
@@ -7105,13 +7108,10 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
                   <code>fn:parse-csv</code> does not distinguish between a header row and data
                   rows, and returns all of them.</p>
 
-               <p>There is an expectation that, in the general case, all rows in a given CSV will
-                  have the same number of columns, but there is no guarantee of this.</p>
-
                <eg>
-"Column 1,Column 2,Column 3
+'Column 1,Column 2,Column 3
 Field 1A,Field 1B,Field 1C
-Field 2A,Field 2B,Field 2C"
+Field 2A,Field 2B,Field 2C'
                </eg>
 
                <p>Produces</p>
@@ -7123,6 +7123,32 @@ Field 2A,Field 2B,Field 2C"
    ["Field 2A", "Field 2B", "Field 2C"]
 )
                </eg>
+
+               <p>There is an expectation that, in the general case, all rows in a given CSV will
+                  have the same number of columns, but there is no guarantee of this.</p>
+               
+               <eg>
+                  'Column 1,Column 2,Column 3
+                  Field 1A,Field 1B,Field 1C
+                  Field 2A,Field 2B,Field 2C,Field 2D'
+               </eg>
+               
+               <p>Produces</p>
+               
+               <eg>
+                  (
+                  ["Column 1", "Column 2", "Column 3"],
+                  ["Field 1A", "Field 1B", "Field 1C"],
+                  ["Field 2A", "Field 2B", "Field 2C", "Field 2D]
+                  )
+               </eg>
+               
+               <p><bibref ref="rfc4180"/> states that CSVs <rfc2119>should</rfc2119> contain the
+                  same number of fields in each row, so that there are a uniform number of columns.
+                  Implementations of this function <rfc2119>must not</rfc2119> truncate or pad the
+                  number of fields in each row for any reason. The <code>fn:csv-to-xml</code> and
+                  <code>fn:csv-to-xdm</code> functions provide facilities to deal with
+                  enforcing uniformity and an expected number of columns.</p>
             </div3>
 
             <div3 id="csv-to-xdm-mapping">
