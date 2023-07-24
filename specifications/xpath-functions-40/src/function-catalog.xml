@@ -20522,7 +20522,8 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             takes place. The <termref
                def="option-parameter-conventions">option parameter conventions</termref> apply.</p>
          
-         <p>Implementations <rfc2119>must</rfc2119> treat any of CRLF, CR, or LF as a single line separator, as with <code>fn:unparsed-text-lines</code>.</p>
+         <p>Implementations <rfc2119>must</rfc2119> treat any of CRLF, CR, or LF as a single line
+            separator, as with <code>fn:unparsed-text-lines</code>.</p>
          
          <p>Fields are regarded as simple <code>xs:string</code> values. Implementations
             <rfc2119>must</rfc2119> leave whitespace within a field untouched, without
@@ -20678,6 +20679,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          </fos:example>
       </fos:examples>
    </fos:function>
+
    <fos:function name="csv-to-xdm" prefix="fn">
       <fos:signatures>
          <fos:proto name="csv-to-xdm" return-type-ref="parsed-csv-structure-record">
@@ -20763,30 +20765,30 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             </fos:option>
             <fos:option key="column-names">
                <fos:meaning>Determines whether the first row of the CSV should be treated as a list
-                  of column headers and returned as a <code>csv-columns-record</code> in the
-                  <code>header</code> entry of the returned map.</fos:meaning>
-               <fos:type>union(xs:boolean, map(xs:integer, xs:string))</fos:type>
+                  of column names and returned as a <code>csv-columns-record</code> in the
+                  <code>columns</code> entry of the returned map.</fos:meaning>
+               <fos:type>union(xs:boolean, map(xs:string, xs:integer))</fos:type>
                <fos:default>false</fos:default>
                <fos:values>
                   <fos:value value="true">A <code>csv-columns-record</code> is constructed using the
                      first row of the CSV data and returned as the <code>header</code> entry of the
                      <code>parsed-csv-structure-record</code>. The row's fields are transformed
-                     into a map of the form <code>{ column-number: "Column name" }</code> for the
-                     <code>columns</code> entry of the <code>csv-columns-record</code>, and the
+                     into a map of the form <code>{ "Column name": column-number }</code> for the
+                     <code>names</code> entry of the <code>csv-columns-record</code>, and the
                      fields of the row are returned as a sequence of strings
                      (<code>xs:string*</code>) for the <code>fields</code> entry. Implmentations
                      <rfc2119>must</rfc2119> exclude the first row from the <code>rows</code>
                      entry of the returned <code>parsed-csv-structure-record</code>.</fos:value>
                   <fos:value value="false">Implementations <rfc2119>must</rfc2119> return an empty
                      <code>csv-columns-record</code>, equivalent to the literal map <code>map {
-                     columns: map {}, fields: () }</code>, in the <code>header</code> entry of
+                     names: map {}, fields: () }</code>, in the <code>columns</code> entry of
                      the returned <code>parsed-csv-structure-record</code>. Implementations
                      <rfc2119>must not</rfc2119> exclude the first row from the <code>rows</code>
                      entry of the <code>parsed-csv-structure-record</code>.</fos:value>
                   <fos:value value="map(xs:integer, xs:string)">A <code>csv-columns-record</code> is
                      constructed using the supplied map and returned as the <code>header</code>
                      entry of the <code>parsed-csv-structure-record</code>. The supplied map is used
-                     as the <code>columns</code> entry, and a sequence of strings for the
+                     as the <code>names</code> entry, and a sequence of strings for the
                      <code>fields</code> is constructed, filling in blank columns with the empty
                      string. and the fields of the row are returned as the <code>fields</code>
                      entry. Implementations <rfc2119>must not</rfc2119> exclude the first row from
@@ -20818,20 +20820,25 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
 
          <p>If column names were extracted from the first row of the CSV, when there are duplicate
             column names, implementations <rfc2119>must</rfc2119> include only the first occurrence
-            in the <code>columns</code> entry of the <code>csv-columns-record</code>, ignoring
+            in the <code>names</code> entry of the <code>csv-columns-record</code>, ignoring
             subsequent entries. Any fields in the first record whose value is the empty string
             <rfc2119>must</rfc2119> also be omitted.</p>
 
          <p>The result of the function is a <code>parsed-csv-structure-record</code>, a map with
-            string keys containing two entries, <code>header</code>, and <code>rows</code>.</p>
+            string keys containing two entries, <code>columns</code>, and <code>rows</code>.</p>
          <olist>
             <item>
-               <p>The entry with key <code>"header"</code> holds a <code>csv-columns-record</code>
+               <p>The entry with key <code>"columns"</code> holds a <code>csv-columns-record</code>
                   record. If column names have been extracted, or supplied, then the record will
-                  have a <code>columns</code> entry whose value is a map of column-number to
-                  column-name, <code>map(xs:integer, xs:string)</code>. The record's
-                     <code>fields</code> entry will contains the column names as a sequence of strings,
-                     <code>xs:string*</code>, replicating the row they were taken from.</p>
+                  have a <code>names</code> entry whose value is a map of column-name to
+                  column-number, <code>map(xs:integer, xs:string)</code>. The record's
+                  <code>fields</code> entry will contains the column names as a sequence of
+                  strings, <code>xs:string*</code>, replicating the row they were taken from.</p>
+
+               <p>If column names were not extracted or supplied, then the
+                  <code>csv-columns-record</code> will contain a <code>names</code> entry whose
+                  value is an empty map, and a <code>fields</code> entry whose value is the empty
+                  sequence.</p>
             </item>
             <item>
                <p>The entry with key <code>"rows"</code> holds the records of the CSV as a sequence
@@ -20839,13 +20846,13 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                   will be the empty sequence.</p>
 
                <p>Each record in the <code>rows</code> sequence contains a <code>fields</code>
-                  entry, containing the rows fields as a sequence of strings,
+                  entry, containing the row's fields as a sequence of strings,
                   <code>xs:string*</code>, and a <code>field</code> entry containing an arity-one
-                  function. The function takes a string or
-                  integer key <var>K</var> as input, and returns the field in <var>fields</var> that
-                  corresponds to the position <var>K</var>, if <var>K</var> is an
-                  <code>xs:integer</code>, or the position obtained by looking up <var>K</var> in
-                  the <code>names</code> map if <var>K</var> is an <code>xs:string</code>.</p>
+                  function. The function takes a string or integer key <var>K</var> as input, and
+                  returns the field in <var>fields</var> that corresponds to the position
+                  <var>K</var>, if <var>K</var> is an <code>xs:integer</code>, or the position
+                  obtained by looking up <var>K</var> in the <code>names</code> map if <var>K</var>
+                  is an <code>xs:string</code>.</p>
 
                <p>The properties of this function are as follows:</p>
                <ulist>
@@ -20865,16 +20872,18 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                      <p>implementation: implementation-dependent</p>
                   </item>
                   <item>
-                     <p>errors: A dynamic error <errorref class="CV" code="0004"/> occurs if the supplied <var>$key</var> is a string and does not occur in the map of column names.</p>
+                     <p>errors: A dynamic error <errorref class="CV" code="0004"/> occurs if the
+                        supplied <var>$key</var> is a string and does not occur in the map of column
+                        names.</p>
                   </item>
                </ulist>
 
                <p>This function behaves identically to <code>fn:csv-fetch-field-by-column</code>
                   would had the <code>header</code> entry of the containing
                   <code>parsed-csv-structure-record</code> and the <code>fields</code> entry of
-                  this <code>csv-row-record</code> been bound to it through partial function
-                  application. See the definition of <code>fn:csv-fetch-field-by-column</code> for
-                  more details</p>
+                  this <code>csv-row-record</code> been supplied as its first two arguments, and
+                  <var>$key</var> as its last. See the definition of
+                  <code>fn:csv-fetch-field-by-column</code> for more details</p>
             </item>
          </olist>
       </fos:rules>
@@ -20891,7 +20900,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
       </fos:errors>
       <fos:notes>
          <p>All fields are returned as <code>xs:string</code> values.</p>
-         <p>Quoted fields in the input are returned without the quotes..</p>
+         <p>Quoted fields in the input are returned without the quotes.</p>
          <p>For more discussion of the returned data, see <specref ref="csv"/>.</p>
       </fos:notes>
       <fos:examples>
@@ -20907,9 +20916,9 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:result>("header", "rows")</fos:result>
             </fos:test>
             <fos:test use="csv-string escaped-crlf-2">
-               <fos:expression>csv-to-xdm($csv-string)?header</fos:expression>
+               <fos:expression>csv-to-xdm($csv-string)?columns</fos:expression>
                <fos:result>map {
-  "columns": map {},
+  "names": map {},
   "fields": (),
 }</fos:result>
             </fos:test>
@@ -20927,9 +20936,9 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
             </fos:test>
             <p>With defaults for delimiters and quotes, and <code>columns: true()</code> set:</p>
             <fos:test use="csv-string escaped-crlf-2">
-               <fos:expression>csv-to-xdm($csv-string, map {"columns": true()})?header</fos:expression>
+               <fos:expression>csv-to-xdm($csv-string, map {"columns": true()})?columns</fos:expression>
                <fos:result>map {
-  "columns": map { "name": 1, "city": 2 },
+  "names": map { "name": 1, "city": 2 },
   "fields": ("name", "city"),
 }</fos:result>
             </fos:test>
@@ -20957,9 +20966,9 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
                <fos:result>("header", "rows")</fos:result>
             </fos:test>
             <fos:test use="non-default-delims non-standard-csv-string">
-               <fos:expression>csv-to-xdm($non-std-csv, $options)?header</fos:expression>
+               <fos:expression>csv-to-xdm($non-std-csv, $options)?columns</fos:expression>
                <fos:result>map {
-                  "columns": map {},
+                  "names": map {},
                   "fields": (),
                   }</fos:result>
             </fos:test>
@@ -20983,7 +20992,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <p>Filtering columns</p>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
-               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "filter-columns": (2,1,4) })?header?fields</fos:expression>
+               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "filter-columns": (2,1,4) })?columns?fields</fos:expression>
                <fos:result>("name","date","amount")</fos:result>
             </fos:test>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
@@ -20998,7 +21007,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <p>Specifying the number of columns, using "all" (the default)</p>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
-               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": "all" })?header?fields</fos:expression>
+               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": "all" })?columns?fields</fos:expression>
                <fos:result>("date","name","city","amount","currency","original amount","note")</fos:result>
             </fos:test>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
@@ -21013,7 +21022,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <p>Specifying the number of columns using "first-row"</p>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
-               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": "first-row" })?header?fields</fos:expression>
+               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": "first-row" })?columns?fields</fos:expression>
                <fos:result>("date","name","city","amount","currency","original amount","note")</fos:result>
             </fos:test>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
@@ -21028,7 +21037,7 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
          <fos:example>
             <p>Specifying the number of columns with a number</p>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
-               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": 6 })?header?fields</fos:expression>
+               <fos:expression>csv-to-xdm($csv-uneven-cols, map { "columns": true(), "number-of-columns": 6 })?columns?fields</fos:expression>
                <fos:result>("date","name","city","amount","currency","original amount")</fos:result>
             </fos:test>
             <fos:test use="escaped-crlf-2 uneven-cols-csv-string">
@@ -21450,6 +21459,86 @@ else map:put($MAP, $KEY, $ACTION(())</eg>
    </fn:rows>
 </fn:csv>
 ]]></fos:result>
+            </fos:test>
+         </fos:example>
+      </fos:examples>
+   </fos:function>
+
+   <fos:function name="csv-fetch-field-by-column" prefix="fn">
+      <fos:signatures>
+         <fos:proto name="csv-fetch-field-by-column" return-type="xs:string">
+            <fos:arg name="columns" type-ref="csv-columns-record"/>
+            <fos:arg name="fields" type="xs:string*" usage="inspection"/>
+            <fos:arg name="key" type="union(xs:integer, xs:string)" usage="inspection"/>
+         </fos:proto>
+      </fos:signatures>
+      <fos:properties>
+         <fos:property>deterministic</fos:property>
+         <fos:property>context-independent</fos:property>
+         <fos:property>focus-independent</fos:property>
+      </fos:properties>
+      <fos:summary>
+         <p>Fetches a field from a parsed CSV row by name or position.</p>
+      </fos:summary>
+      <fos:rules>
+         <p>The first argument is a <code>csv-columns-record</code>, as provided in the
+            <code>header</code> entry of the <code>parsed-csv-structure-record</code> returned by
+            <code>fn:csv-to-xdm</code>.</p>
+
+         <p>The second argument is the row whose fields are being fetched, represented as a sequence
+            of strings as would be provided by the <code>fields</code> entry of a
+            <code>csv-row-record</code> returned by <code>fn:csv-to-xdm</code>.</p>
+
+         <p>The final argument is the key to use for the lookup, supplied as either an
+            <code>xs:string</code> (the column name) or <code>xs:integer</code> (the column
+            position).</p>
+
+         <p>When the argument is a string, if the string is missing from the keys of the map
+            contained in the <code>names</code> entry of the <code>$columns</code> argument's
+            <code>csv-columns-record</code>, then implementations <rfc2119>must</rfc2119> raise
+            an <errorref class="CV" code="0004"/>.</p>
+
+         <p>When the argument is an integer, if the integer position is outside the bounds of the
+            <code>$fields</code> sequence (i.e. is greater than the size of the sequence), then
+            implementations <rfc2119>must</rfc2119> return the empty string.</p>
+
+         <p>The function returns the field in the sequence <code>$fields</code> at the position in
+            the sequence either explicitly provided (when <code>$key</code> is an
+            <code>xs:integer</code>), or looked up from the map of name to position in the
+            <code>csv-columns-record</code> provided in <code>$columns</code>.</p>
+      </fos:rules>
+      <fos:errors>
+         <p>A dynamic error <errorref class="CV" code="0004"/> occurs if the value of
+            <code>$key</code> is an <code>xs:string</code> but is not a member of the keys of the
+            map contained in the <code>names</code> entry of the <code>csv-columns-record</code> in
+            <code>$header</code>. fields.</p>
+      </fos:errors>
+      <fos:examples>
+         <fos:variable name="columns" id="csv-column-fetch-columns">map {
+   "names": map { "name": 1, "city": 2 },
+   "fields: ("name", "city")
+}</fos:variable>
+         <fos:variable name="fields" id="csv-column-fetch-fields">("Bob", "Berlin")</fos:variable>
+         <fos:example>
+            <p>With a string key:</p>
+            <fos:test use="csv-column-fetch-columns csv-column-fetch-fields">
+               <fos:expression>csv-fetch-field-by-column($columns, $fields, "name")</fos:expression>
+               <fos:result>"Bob"</fos:result>
+            </fos:test>
+            <fos:test use="csv-column-fetch-columns csv-column-fetch-fields">
+               <fos:expression>csv-fetch-field-by-column($columns, $fields, "amount")</fos:expression>
+               <fos:error-result error-code="FOCV0004"/>
+            </fos:test>
+         </fos:example>
+         <fos:example>
+            <p>With an integer key</p>
+            <fos:test use="csv-column-fetch-columns csv-column-fetch-fields">
+               <fos:expression>csv-fetch-field-by-column($columns, $fields, 2)</fos:expression>
+               <fos:result>"Berlin"</fos:result>
+            </fos:test>
+            <fos:test use="csv-column-fetch-columns csv-column-fetch-fields">
+               <fos:expression>csv-fetch-field-by-column($columns, $fields, 3)</fos:expression>
+               <fos:result>""</fos:result>
             </fos:test>
          </fos:example>
       </fos:examples>

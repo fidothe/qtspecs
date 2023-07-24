@@ -14,7 +14,7 @@
 
     <xs:element name="csv" type="csv:csvType"/>
 
-    <xs:element name="header" type="csv:headerType"/>
+    <xs:element name="columns" type="csv:columnsType"/>
 
     <xs:element name="rows" type="csv:rowsType"/>
 
@@ -26,12 +26,12 @@
 
     <xs:complexType name="csvType">
         <xs:sequence>
-            <xs:element ref="csv:header" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="csv:columns" minOccurs="0" maxOccurs="1"/>
             <xs:element ref="csv:rows" minOccurs="1" maxOccurs="1"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="headerType">
+    <xs:complexType name="columnsType">
         <xs:sequence>
             <xs:element ref="csv:column" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>

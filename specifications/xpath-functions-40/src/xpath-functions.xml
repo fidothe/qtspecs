@@ -5772,7 +5772,7 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             <p>The functions listed parse CSV data.</p>
             <?local-function-index?>
             <p>The structured representation of a parsed CSV is described by the
-               <code>parsed-csv-structure-record</code>, see <!--<specref ref="csv-structures"/>-->.</p>
+               <code>parsed-csv-structure-record</code>, see <specref ref="csv-to-xdm-mapping"/>.</p>
 
             <div3 id="func-parse-csv">
                <head><?function fn:parse-csv?></head>
@@ -5782,6 +5782,9 @@ correctly in all browsers, depending on the system configuration.</emph></p>-->
             </div3>
             <div3 id="func-csv-to-xml">
                <head><?function fn:csv-to-xml?></head>
+            </div3>
+            <div3 id="func-csv-fetch-field-by-column">
+               <head><?function fn:csv-fetch-field-by-column?></head>
             </div3>
          </div2>
          <div2 id="json">
@@ -7128,27 +7131,29 @@ Field 2A,Field 2B,Field 2C'
                   have the same number of columns, but there is no guarantee of this.</p>
                
                <eg>
-                  'Column 1,Column 2,Column 3
-                  Field 1A,Field 1B,Field 1C
-                  Field 2A,Field 2B,Field 2C,Field 2D'
+'Column 1,Column 2,Column 3
+Field 1A,Field 1B,Field 1C
+Field 2A,Field 2B,Field 2C,Field 2D'
                </eg>
                
                <p>Produces</p>
                
                <eg>
-                  (
-                  ["Column 1", "Column 2", "Column 3"],
-                  ["Field 1A", "Field 1B", "Field 1C"],
-                  ["Field 2A", "Field 2B", "Field 2C", "Field 2D]
-                  )
+(
+   ["Column 1", "Column 2", "Column 3"],
+   ["Field 1A", "Field 1B", "Field 1C"],
+   ["Field 2A", "Field 2B", "Field 2C", "Field 2D]
+)
                </eg>
                
                <p><bibref ref="rfc4180"/> states that CSVs <rfc2119>should</rfc2119> contain the
                   same number of fields in each row, so that there are a uniform number of columns.
-                  Implementations of this function <rfc2119>must not</rfc2119> truncate or pad the
-                  number of fields in each row for any reason. The <code>fn:csv-to-xml</code> and
-                  <code>fn:csv-to-xdm</code> functions provide facilities to deal with
-                  enforcing uniformity and an expected number of columns.</p>
+                  However, the reality is that CSVs can, and sometimes do, contain a variable number
+                  of fields in a row. As a result, implementations of this function <rfc2119>must
+                  not</rfc2119> truncate or pad the number of fields in each row for any reason.
+                  The <code>fn:csv-to-xml</code> and <code>fn:csv-to-xdm</code> functions provide
+                  facilities to deal with enforcing uniformity and an expected number of
+                  columns.</p>
             </div3>
 
             <div3 id="csv-to-xdm-mapping">
@@ -7160,8 +7165,8 @@ Field 2A,Field 2B,Field 2C'
                
                <?type parsed-csv-structure-record ?>
                               
-               <div4 id="csv-xdm-columns">
-                  <head>The <code>columns</code> entry</head>
+               <div4 id="csv-xdm-header">
+                  <head>The <code>header</code> entry</head>
                   
                   <p>The <code>columns</code> entry describes how columns map to names, as well as
                      providing all the fields in the header row that was used to generate the column
@@ -7242,11 +7247,11 @@ Bob,2023-07-14,2.34
 
                <eg><![CDATA[
 <csv xmlns="http://www.w3.org/2005/xpath-functions">
-   <header>
+   <columns>
       <column>Name</column>
       <column>Date</column>
       <column>Amount</column>
-   </header>
+   </columns>
    <rows>
       <row>
          <field column="Name">Alice</field>
@@ -11102,15 +11107,12 @@ ISBN 0 521 77752 6.</bibl>
                <p>Raised by <code>fn:parse-csv</code> if any of the delimiter characters have been
                   set to the same value.</p>
             </error>
-            <error class="CV" code="0004" label="Argument supplied is not a known field header."
+            <error class="CV" code="0004" label="Argument supplied is not a known column name."
                type="dynamic">
-               <p>Raised by <code>fn:csv-to-xml()?field</code> if its <code>$key</code> argument is
-                  an <code>xs:string</code> and is not one of the header keys.</p>
-            </error>
-            <error class="CV" code="0005" label="Argument not a parsed-csv-structure-record."
-               type="dynamic">
-               <p>Raised by <code>fn:csv-to-xml</code> if its <code>$csv</code> argument does not
-                  match the <code>parsed-csv-structure-record</code> record type.</p>
+               <p>Raised by <code>fn:csv-fetch-field-by-column</code>, and the function from the
+                  <code>field</code> entry of <code>csv-columns-record</code>, if its
+                  <code>$key</code> argument is an <code>xs:string</code> and is not one of the
+                  known column names.</p>
             </error>
             <error class="DC" code="0001" label="No context document." type="dynamic">
                <p>Raised by <code>fn:id</code>, <code>fn:idref</code>, and <code>fn:element-with-id</code>
@@ -12039,6 +12041,9 @@ declare function eg:distinct-nodes-stable ($arg as node()*) as node()* {
               <item><p><code>map:replace</code></p></item>
               <item><p><code>map:substitute</code></p></item>
               <item><p><code>fn:parse-csv</code></p></item>
+              <item><p><code>fn:csv-to-xdm</code></p></item>
+              <item><p><code>fn:csv-to-xml</code></p></item>
+              <item><p><code>fn:csv-fetch-field-by-column</code></p></item>
               <item><p><code>array:partition</code></p></item>
               <item><p><code>array:replace</code></p></item>
               <item><p><code>array:slice</code></p></item>
